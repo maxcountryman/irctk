@@ -9,8 +9,13 @@ from gevent import queue
 
 import settings
 
+logging.basicConfig(filename=os.path.join(settings.log_dir, "base.log"), level=logging.DEBUG)
+
 class Tcp(object):
-    '''Handles TCP connections. Timeout is 300 secs.'''
+    '''
+    Handles TCP connections, `timeout` is in secs. Access output and
+    send input via `iqueue` and `oqueue` respectively.
+    '''
 
     def __init__(self, host, port, timeout=300):
         self._ibuffer = ''
@@ -43,21 +48,21 @@ class Tcp(object):
             while '\r\n' in self._ibuffer:
                 line, self._ibuffer = self._ibuffer.split('\r\n', 1)
                 self.iqueue.put(line)
-                logging.debug("recv: " + line)
+                logging.debug('recv: ' + line)
                 print line
 
     def _send_loop(self):
         while True:
             line = self.oqueue.get().splitlines()[0][:500]
-            logging.debug("send: " + line)
-            print ">>> %r" % line
+            logging.debug('send: ' + line)
+            print '>>> %r' % line
             self._obuffer += line.encode('utf-8', 'replace') + '\r\n'
             while self._obuffer:
                 sent = self._socket.send(self._obuffer)
                 self._obuffer = self._obuffer[sent:]
 
 class SslTcp(Tcp):
-    '''SSL wrapper for TCP connections. Timeout is 300 secs.'''
+    '''SSL wrapper for TCP connections, `timeout` is in secs.'''
 
     def __init__(self, host, port, timeout=300):
         Tcp.__init__(self, host, port, timeout)
@@ -78,7 +83,7 @@ class Irc(object):
         self.ssl = ssl
         self.channels = channels
         self.out = queue.Queue() # responses from the server
-        self._hooks = { "ping": self._pong, "396": self._396, }
+        self._hooks = { 'ping': self._pong, '396': self._396, }
         self._connect()
         
         # parallel event loop
@@ -86,35 +91,32 @@ class Irc(object):
         gevent.joinall(self.jobs)
 
     def _create_connection(self):
-        return Tcp(self.server, self.port)
-
-    def _create_ssl_connection(self):
-        return SslTcp(self.server, self.port)
+        if self.ssl is False:
+            return Tcp(self.server, self.port)
+        else:
+            return SslTcp(self.server, self.port)
 
     def _connect(self):
-        if self.ssl is False:
-            self.conn = self._create_connection()
-        else:
-            self.conn = self._create_ssl_connection()
+        self.conn = self._create_connection()
         gevent.spawn(self.conn.connect)
         self._set_nick(self.nick)
         sleep(1)
-        self.cmd("USER",
-                ['pybot', "3", "*",'Python Bot'])
+        self.cmd('USER',
+                ['pybot', '3', '*','Python Bot'])
 
     def _parse_loop(self):
         while True:
             line = self.conn.iqueue.get()
-            trailing = ""
-            prefix = ""
+            trailing = ''
+            prefix = ''
             
-            if line[0] == ":":
+            if line[0] == ':':
                 line = line[1:].split(' ', 1)
                 prefix = line[0]
                 line = line[1]
             
-            if " :" in line:
-                line = line.split(" :", 1)
+            if ' :' in line:
+                line = line.split(' :', 1)
                 trailing = line[1]
                 line = line[0]
             args = line.split()
@@ -126,7 +128,7 @@ class Irc(object):
             try:
                 t = gevent.with_timeout(event.timeout, self._call_hook, event)
             except gevent.Timeout, t:
-                logging.exception("Hook call timed out!")
+                logging.exception('Hook call timed out!')
 
     def set_hook(self, hook, func):
         self.hooks[hook] = func
@@ -136,17 +138,17 @@ class Irc(object):
             self._hooks[event.hook](event)
 
     def _pong(self, event):
-        self.cmd("PONG", event.args)
+        self.cmd('PONG', event.args)
         
     def _396(self, event): # finished connecting, we can join
         for channel in self.channels:
             self._join(channel)
 
     def _set_nick(self, nick):
-        self.cmd("NICK", [nick])
+        self.cmd('NICK', [nick])
 
     def _join(self, channel):
-        self.cmd("JOIN", [channel])
+        self.cmd('JOIN', [channel])
 
     def cmd(self, command, params=None):
         if params:
@@ -155,8 +157,8 @@ class Irc(object):
         else:
             self._send(command)
             
-    def _send(self, str):
-        self.conn.oqueue.put(str)
+    def _send(self, s):
+        self.conn.oqueue.put(s)
 
 class IrcEvent(object):
     def __init__(self, hook, source, args, timeout):
@@ -165,5 +167,5 @@ class IrcEvent(object):
         self.args = args
         self.timeout = timeout
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     bot = Irc('irc.voxinfinitus.net', 'Kaa', 6697, True, ['#voxinfinitus','#landfill'])
