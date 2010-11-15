@@ -54,7 +54,7 @@ class IRC(object):
         self.port = port
         self.channels = channels
         self.out = queue.Queue() # responses from the server
-        self.hooks = { "ping": self.pong, "396": self._396, "353": self._353, }
+        self.hooks = { "ping": self.pong, "396": self._396, }
         self.connect()
         
         # parallel event loop(s)
