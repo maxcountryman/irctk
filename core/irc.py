@@ -64,9 +64,6 @@ class Tcp(object):
 class SslTcp(Tcp):
     '''SSL wrapper for TCP connections, `timeout` is in secs.'''
 
-    def __init__(self, host, port, timeout=300):
-        Tcp.__init__(self, host, port, timeout)
-
     def _create_socket(self):
         return wrap_socket(Tcp._create_socket(self), server_side=False)
 
