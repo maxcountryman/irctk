@@ -1,5 +1,3 @@
-import time
-
 import gevent
 from gevent import socket
 from gevent import sleep
@@ -30,7 +28,6 @@ class tcp(object):
         return self.socket.recv(nbytes)
     
     def recv_loop(self):
-        last_timestamp = time.time()
         while True:
             data = self.recv_from_socket(4096)
             self.ibuffer += data
@@ -114,11 +111,6 @@ class IRC(object):
     def _396(self, event): # finished connecting, we can join
         for channel in self.channels:
             self.join(channel)
-
-    def _353(self, event):
-        print "Starting to wait...."
-        sleep(15)
-        print "Waited all the 15 seconds, sir!"    
 
     def set_nick(self, nick):
         self.cmd("NICK", [nick])
