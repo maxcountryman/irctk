@@ -1,10 +1,12 @@
+import logging
+
 import gevent
 from gevent import socket
 from gevent import sleep
 from gevent import queue
 
-class tcp(object):
-    "handles TCP connections"
+class TCP(object):
+    '''Handles TCP connections.'''
 
     def __init__(self, host, port, timeout=300):
         self.ibuffer = ''
@@ -17,7 +19,7 @@ class tcp(object):
         self.timeout = timeout
 
     def create_socket(self):
-        return socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        return socket.socket()
 
     def run(self):
         self.socket.connect((self.host, self.port))
@@ -45,8 +47,15 @@ class tcp(object):
                 sent = self.socket.send(self.obuffer)
                 self.obuffer = self.obuffer[sent:]
 
+class IRCEvent(object):
+    def __init__(self, hook, source, args, timeout):
+        self.hook = hook.lower()
+        self.source = source
+        self.args = args
+        self.timeout = timeout
+
 class IRC(object):
-    "handles the IRC protocol"
+    '''Handles the IRC protocol.'''
 
     def __init__(self, server, nick, port=6667, channels=['']):
         self.server = server
@@ -54,7 +63,7 @@ class IRC(object):
         self.port = port
         self.channels = channels
         self.out = queue.Queue() # responses from the server
-        self.hooks = { "ping": self.pong, "396": self._396, }
+        self.hooks = { "ping": self.pong, "396": self._396 }
         self.connect()
         
         # parallel event loop(s)
@@ -62,7 +71,7 @@ class IRC(object):
         gevent.joinall(self.jobs)
 
     def create_connection(self):
-        return tcp(self.server, self.port)
+        return TCP(self.server, self.port)
 
     def connect(self):
         self.conn = self.create_connection()
@@ -128,12 +137,6 @@ class IRC(object):
     def send(self, str):
         self.conn.oqueue.put(str)
 
-class IRCEvent(object):
-    def __init__(self, hook, source, args, timeout):
-        self.hook = hook.lower()
-        self.source = source
-        self.args = args
-        self.timeout = timeout
 
 if __name__ == "__main__":
     bot = IRC('irc.voxinfinitus.net', 'Kaa', 6667, ['#voxinfinitus','#landfill'])
