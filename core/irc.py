@@ -1,9 +1,14 @@
 import logging
+import os.path
 
 import gevent
 from gevent import socket
 from gevent import sleep
 from gevent import queue
+
+import settings
+
+logging.basicConfig(filename=os.path.join(settings.log_dir, "base.log"), level=logging.DEBUG)
 
 class TCP(object):
     '''Handles TCP connections.'''
@@ -36,11 +41,13 @@ class TCP(object):
             while '\r\n' in self.ibuffer:
                 line, self.ibuffer = self.ibuffer.split('\r\n', 1)
                 self.iqueue.put(line)
+                logging.debug("recv: " + line)
                 print line
 
     def send_loop(self):
         while True:
             line = self.oqueue.get().splitlines()[0][:500]
+            logging.debug("send: " + line)
             print ">>> %r" % line
             self.obuffer += line.encode('utf-8', 'replace') + '\r\n'
             while self.obuffer:
@@ -49,6 +56,7 @@ class TCP(object):
 
 class IRCEvent(object):
     def __init__(self, hook, source, args, timeout):
+        logging.debug("Event {0}, source: {1}, args: {2}".format(hook, source, args))
         self.hook = hook.lower()
         self.source = source
         self.args = args
@@ -105,7 +113,7 @@ class IRC(object):
             try:
                 t = gevent.with_timeout(event.timeout, self.call_hook, event)
             except gevent.Timeout, t:
-                pass
+                logging.exception("Hook call timed out!")
 
     def set_hook(self, hook, func):
         self.hooks[hook] = func
@@ -139,4 +147,4 @@ class IRC(object):
 
 
 if __name__ == "__main__":
-    bot = IRC('irc.voxinfinitus.net', 'Kaa', 6667, ['#voxinfinitus','#landfill'])
+    bot = IRC('irc.voxinfinitus.net', 'Kaa_', 6667, ['#voxinfinitus','#landfill'])
