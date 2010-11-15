@@ -1,3 +1,6 @@
+import logging
+import os.path
+
 import gevent
 from gevent import socket
 from gevent.ssl import wrap_socket
@@ -38,11 +41,13 @@ class Tcp(object):
             while '\r\n' in self._ibuffer:
                 line, self._ibuffer = self._ibuffer.split('\r\n', 1)
                 self.iqueue.put(line)
+                logging.debug("recv: " + line)
                 print line
 
     def _send_loop(self):
         while True:
             line = self.oqueue.get().splitlines()[0][:500]
+            logging.debug("send: " + line)
             print ">>> %r" % line
             self._obuffer += line.encode('utf-8', 'replace') + '\r\n'
             while self._obuffer:
@@ -119,7 +124,7 @@ class Irc(object):
             try:
                 t = gevent.with_timeout(event.timeout, self._call_hook, event)
             except gevent.Timeout, t:
-                pass
+                logging.exception("Hook call timed out!")
 
     def set_hook(self, hook, func):
         self.hooks[hook] = func
