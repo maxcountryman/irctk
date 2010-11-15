@@ -7,6 +7,8 @@ from gevent.ssl import wrap_socket
 from gevent import sleep
 from gevent import queue
 
+import settings
+
 class Tcp(object):
     '''Handles TCP connections. Timeout is 300 secs.'''
 
