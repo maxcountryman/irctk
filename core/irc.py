@@ -23,7 +23,7 @@ class Tcp(object):
         self.timeout = timeout
 
     def _create_socket(self):
-        return socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        return socket.socket()
 
     def connect(self):
         self._socket.connect((self.host, self.port))
