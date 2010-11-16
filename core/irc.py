@@ -32,11 +32,12 @@ class Tcp(object):
 
     def connect(self):
         self._socket.connect((self.host, self.port))
-        gevent.spawn(self._recv_loop)
-        gevent.spawn(self._send_loop)
+        jobs = [gevent.spawn(self._recv_loop), gevent.spawn(self._send_loop)]
+        gevent.joinall(jobs)
 
     def disconnect(self):
         self._socket.close()
+        gevent.killall(jobs)
 
     def _recv_from_socket(self, nbytes):
         return self._socket.recv(nbytes)
@@ -165,4 +166,4 @@ class IrcEvent(object):
         self.timeout = timeout
 
 if __name__ == '__main__':
-    bot = Irc('irc.voxinfinitus.net', 'Kaa', 6697, True, ['#voxinfinitus','#landfill'])
+    bot = Irc('irc.voxinfinitus.net', 'Kaa_', 6697, True, ['#voxinfinitus','#landfill'])
