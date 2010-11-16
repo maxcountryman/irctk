@@ -51,8 +51,7 @@ class Tcp(object):
 
     def _send_loop(self):
         while True:
-            line = self.oqueue.get().splitlines()[0][:500]
-            print '>>> %r' % line
+            line = self.oqueue.get().splitlines()[0][:500]=
             self._obuffer += line.encode('utf-8', 'replace') + '\r\n'
             while self._obuffer:
                 sent = self._socket.send(self._obuffer)
