@@ -9,6 +9,8 @@ from gevent import queue
 
 import settings
 
+logging.basicConfig(filename=os.path.join(settings.log_dir, "base.log"), level=logging.DEBUG)
+
 class Tcp(object):
     '''Handles TCP connections. Timeout is 300 secs.'''
 
@@ -166,4 +168,4 @@ class IrcEvent(object):
         self.timeout = timeout
 
 if __name__ == "__main__":
-    bot = Irc('irc.voxinfinitus.net', 'Kaa', 6697, True, ['#voxinfinitus','#landfill'])
+    bot = Irc('irc.voxinfinitus.net', 'Kaa_', 6697, True, ['#voxinfinitus','#landfill'])
