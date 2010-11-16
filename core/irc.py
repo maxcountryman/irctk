@@ -32,6 +32,7 @@ class Tcp(object):
 
     def connect(self):
         self._socket.connect((self.host, self.port))
+
         jobs = [gevent.spawn(self._recv_loop), gevent.spawn(self._send_loop)]
         gevent.joinall(jobs)
 
@@ -49,13 +50,13 @@ class Tcp(object):
             while '\r\n' in self._ibuffer:
                 line, self._ibuffer = self._ibuffer.split('\r\n', 1)
                 self.iqueue.put(line)
-                logging.debug('recv: ' + line)
+                logging.debug(line)
                 print line
 
     def _send_loop(self):
         while True:
             line = self.oqueue.get().splitlines()[0][:500]
-            logging.debug('send: ' + line)
+            logging.debug('>>> ' + line)
             print '>>> %r' % line
             self._obuffer += line.encode('utf-8', 'replace') + '\r\n'
             while self._obuffer:
@@ -140,12 +141,12 @@ class Irc(object):
         
     def _396(self, event): # finished connecting, we can join
         for channel in self.channels:
-            self._join(channel)
+            self.join(channel)
 
     def _set_nick(self, nick):
         self.cmd('NICK', [nick])
 
-    def _join(self, channel):
+    def join(self, channel):
         self.cmd('JOIN', [channel])
 
     def cmd(self, command, params=None):
@@ -166,4 +167,4 @@ class IrcEvent(object):
         self.timeout = timeout
 
 if __name__ == '__main__':
-    bot = Irc('irc.voxinfinitus.net', 'Kaa_', 6697, True, ['#voxinfinitus','#landfill'])
+    bot = Irc('irc.voxinfinitus.net', 'Kaa', 6697, True, ['#voxinfinitus','#landfill'])
