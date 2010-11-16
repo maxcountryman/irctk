@@ -1,1 +1,3 @@
-Probably don't need too much here for now...
+A simple IRC bot written in Python using gevent.
+
+Add to this file as the project grows...`
