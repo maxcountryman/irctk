@@ -1,6 +1,6 @@
 *.pyc
 .*
-logs/*
+logs/
 bin/
 include/
 lib/
