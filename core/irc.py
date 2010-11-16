@@ -64,7 +64,7 @@ class Tcp(object):
                 self._obuffer = self._obuffer[sent:]
 
 class SslTcp(Tcp):
-    '''SSL wrapper for TCP connections, `timeout` is in secs.'''
+    '''SSL wrapper for TCP connections.'''
 
     def _create_socket(self):
         return wrap_socket(Tcp._create_socket(self), server_side=False)
@@ -173,7 +173,7 @@ class IrcEvent(object):
 if __name__ == '__main__':
     
     bot = lambda : Irc('irc.voxinfinitus.net', 'Kaa', 6697, True, ['#voxinfinitus','#landfill'])
-    another_bot = lambda : Irc('irc.freenode.net', 'Kaa___', 6667, False, ['##devil'])
+    another_bot = lambda : Irc('irc.freenode.net', 'Kaa_', 6667, False, ['#landfill'])
     
     jobs = [gevent.spawn(bot),gevent.spawn(another_bot)]
     gevent.joinall(jobs)
