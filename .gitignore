@@ -1,0 +1,10 @@
+*.pyc
+*.py.*
+.*
+logs/
+bin/
+include/
+lib/
+build/
+!.gitignore
+
