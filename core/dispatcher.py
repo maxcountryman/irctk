@@ -9,12 +9,14 @@ receive events.
 
 In this way we can acheive something along the lines of: `if hook in cmd_hooks: 
 bot.cmd(cmd_hooks[hook](bot.event))`. This is the `_publish()` logic.
+
+Because the dicts will live outside of classes, we should import the entire
+namespace. Although we could put the `command()` and `subscribe()` functions
+in a class it would seem unecessary.
 '''
 
 import inspect 
 from collections import defaultdict
-
-import gevent
 
 cmd_hooks = {} # store functions in a standard dictionary
 sub_hooks = defaultdict(list) # store functions in a list associated with a hook
@@ -49,18 +51,26 @@ def subscribe(hook):
     
     return subscribe_wrapper
 
-class Dispatcher(bot):
+class Publish(object): # Dispatcher
     '''Publish functions associated with hooks to `Irc.cmd()`. Load 
        subscriptions with `load()`.
     '''
 
-    def __init__(self):
+    def __init__(self, bot, cmd=False):
         self.bot = bot
-        event = self.bot.event # event normalized by Irc()
+        self.cmd = cmd
+        self._event = self.bot.event # event normalized by Irc()        
         self._publish()
-    
-    def _publish(self.bot, *subs): # publish subscribed events and commands to a bot
-        pass #implement this
 
-    def load(): # load subscriptions
+    def _publish(self, bot, cmd): # publish subscribed events and commands to a bot
+        '''Pass True if publishing commands.'''
+
+        if self.cmd:
+            for hook in cmd_hooks:
+                self.bot.cmd(cmd_hooks[hook](self._event))
+        else:
+            for hook in sub_hooks:
+                self.bot.cmd(sub_hooks[hook]())
+    
+    def load(self): # load subscriptions
         pass # implement this

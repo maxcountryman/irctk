@@ -1,10 +1,17 @@
 import gevent
 
 from core.irc import Irc
+from core.dispatcher import *
+from core.dispatcher import subscribe
+from core.dispatcher import Publish
 
 if __name__ == '__main__':
     bot = lambda : Irc('irc.voxinfinitus.net', 'Kaa', 6697, True, ['#voxinfinitus','#landfill'])
-    another_bot = lambda : Irc('irc.freenode.net', 'Kaa_', 6667, False, ['#landfill'])
+    pub = lambda : Publish(bot, False) 
     
-    jobs = [gevent.spawn(bot)]
+    @subscribe('PING')
+    def pong(self, event):
+        bot.cmd('PONG', event.args)
+
+    jobs = [gevent.spawn(bot), gevent.spawn(pub)]
     gevent.joinall(jobs)
