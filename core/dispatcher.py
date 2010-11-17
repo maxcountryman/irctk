@@ -45,10 +45,12 @@ def subscribe(hook):
 
     def subscribe_wrapper(func):
         sub_hooks[hook] = [func]
-        return subscribe_wrapper
+        return func
+    
+    return subscribe_wrapper
 
 class Dispatcher(bot):
-    '''Publish functions associated with hooks to `Irc.send()`. Load 
+    '''Publish functions associated with hooks to `Irc.cmd()`. Load 
        subscriptions with `load()`.
     '''
 
