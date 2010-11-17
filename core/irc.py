@@ -51,7 +51,7 @@ class Tcp(object):
 
     def _send_loop(self):
         while True:
-            line = self.oqueue.get().splitlines()[0][:500]=
+            line = self.oqueue.get().splitlines()[0][:500]
             self._obuffer += line.encode('utf-8', 'replace') + '\r\n'
             while self._obuffer:
                 sent = self._socket.send(self._obuffer)
@@ -107,10 +107,8 @@ class Irc(object):
         gevent.joinall(self.jobs)
 
     def _create_connection(self):
-        if self.ssl is False:
-            return Tcp(self.server, self.port)
-        else:
-            return SslTcp(self.server, self.port)
+        transport = SslTcp if self.ssl else Tcp
+        transport(self.server, self.port)
 
     def _connect(self):
         self.conn = self._create_connection()
