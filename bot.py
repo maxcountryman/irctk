@@ -2,16 +2,30 @@ import gevent
 
 from core.irc import Irc
 from core.dispatcher import *
-from core.dispatcher import subscribe
-from core.dispatcher import Publish
 
-if __name__ == '__main__':
-    bot = lambda : Irc('irc.voxinfinitus.net', 'Kaa', 6697, True, ['#voxinfinitus','#landfill'])
-    pub = lambda : Publish(bot, False) 
+@subscribe('ping')
+def ping(bot, args):
+    bot.cmd('PONG', args[1])
+
+@subscribe('notice')
+def start(bot, args):
+    bot.cmd('USER', ['pybot', '3', '*', 'Python Bot'])
+    bot.cmd('NICK', [bot.nick])
+
+@subscribe('396')
+def join(bot, args):
+    for channel in bot.channels:
+        bot.cmd('JOIN', [channel])
+
+class Bot(Irc):
+    def __init__(self, server, nick, port=6667, ssl=False, channels=[]):
+        self.channels = channels
+        jobs = [gevent.spawn(Irc.__init__, self, server, nick, port, ssl), gevent.spawn(self._parse_events)]
+        gevent.joinall(jobs)
     
-    @subscribe('PING')
-    def pong(self, event):
-        bot.cmd('PONG', event.args)
+    def _parse_events(self):
+        while True:
+            event = self.events.get()
+            dispatch(self, event)
 
-    jobs = [gevent.spawn(bot), gevent.spawn(pub)]
-    gevent.joinall(jobs)
+vox = Bot('irc.voxinfinitus.net', 'bot___', channels=['#voxinfinitus'])
