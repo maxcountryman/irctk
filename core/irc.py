@@ -107,10 +107,8 @@ class Irc(object):
         gevent.joinall(self.jobs)
 
     def _create_connection(self):
-        if self.ssl is False:
-            return Tcp(self.server, self.port)
-        else:
-            return SslTcp(self.server, self.port)
+        transport = SslTcp if self.ssl else Tcp
+        transport(self.server, self.port)
 
     def _connect(self):
         self.conn = self._create_connection()
