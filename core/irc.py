@@ -79,18 +79,12 @@ class Irc(object):
         gevent.joinall(self.jobs)
 
     def _create_connection(self):
-        if self.ssl is False:
-            return Tcp(self.server, self.port)
-        else:
-            return SslTcp(self.server, self.port)
+        transport = SslTcp if self.ssl else Tcp
+        return transport(self.server, self.port)
 
     def _connect(self):
         self.conn = self._create_connection()
         gevent.spawn(self.conn.connect)
-        self._set_nick(self.nick)
-        sleep(1)
-        self.cmd('USER',
-                ['pybot', '3', '*','Python Bot'])
 
     def _pong(self, event):
         self.cmd('PONG', event.args)

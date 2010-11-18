@@ -46,31 +46,17 @@ def subscribe(hook):
     '''
 
     def subscribe_wrapper(func):
-        sub_hooks[hook] = [func]
+        sub_hooks[hook].append(func)
         return func
     
     return subscribe_wrapper
 
-class Publish(object): # Dispatcher
-    '''Publish functions associated with hooks to `Irc.cmd()`. Load 
-       subscriptions with `load()`.
-    '''
+def dispatch(bot, event):
+    for func in sub_hooks[event.hook]:
+        func(bot, event.args)
 
-    def __init__(self, bot, cmd=False):
-        self.bot = bot
-        self.cmd = cmd
-        self._event = self.bot.event # event normalized by Irc()        
-        self._publish()
 
-    def _publish(self, bot, cmd): # publish subscribed events and commands to a bot
-        '''Pass True if publishing commands.'''
-
-        if self.cmd:
-            for hook in cmd_hooks:
-                self.bot.cmd(cmd_hooks[hook](self._event))
-        else:
-            for hook in sub_hooks:
-                self.bot.cmd(sub_hooks[hook]())
-    
-    def load(self): # load subscriptions
-        pass # implement this
+#class Publisher(object): # Dispatcher
+#    '''Publish functions associated with hooks to `Irc.cmd()`. Load 
+#       subscriptions with `load()`.
+#    '''
