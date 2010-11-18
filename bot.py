@@ -1,17 +1,26 @@
 import gevent
 
 from core.irc import Irc
-from core.dispatcher import *
-from core.dispatcher import subscribe
-from core.dispatcher import Publish
+from core.hooks import *
+from core.parser import *
 
-if __name__ == '__main__':
-    bot = lambda : Irc('irc.voxinfinitus.net', 'Kaa', 6697, True, ['#voxinfinitus','#landfill'])
-    pub = lambda : Publish(bot, False) 
+class Bot(object):
     
-    @subscribe('PING')
-    def pong(self, event):
-        bot.cmd('PONG', event.args)
+    def __init__(self):
+        jobs = [gevent.spawn(self.connect),gevent.spawn(self.parse)]
+        gevent.joinall(jobs)
+    
+    def connect(self):
+            self.irc = Irc('irc.voxinfinitus.net', 'Kaa', 6697, True, ['#voxinfinitus','#landfill'])
 
-    jobs = [gevent.spawn(bot), gevent.spawn(pub)]
-    gevent.joinall(jobs)
+    def parse(self):
+        while True: # magic loop
+            event_queue = self.irc.conn.iqueue.get()
+            parsed_shit = parse_raw_input(event_queue)
+            pub = Dispatcher(parsed_shit)
+
+    @subscribe('PING')
+    def pong(inpu):
+        self.irc.cmd('PONG', inpu.paramlist)
+
+badass_bot = Bot()
