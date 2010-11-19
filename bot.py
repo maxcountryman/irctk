@@ -1,26 +1,43 @@
 import gevent
+from gevent import sleep
 
 from core.irc import Irc
 from core.hooks import *
-from core.parser import *
 
-class Bot(object):
-    
-    def __init__(self):
-        jobs = [gevent.spawn(self.connect),gevent.spawn(self.parse)]
-        gevent.joinall(jobs)
-    
-    def connect(self):
-            self.irc = Irc('irc.voxinfinitus.net', 'Kaa', 6697, True, ['#voxinfinitus','#landfill'])
+@subscribe('ping')
+def ping(bot, args):
+    bot.irc.cmd('PONG', args[1])
 
-    def parse(self):
-        while True: # magic loop
-            event_queue = self.irc.conn.iqueue.get()
-            parsed_shit = parse_raw_input(event_queue)
-            pub = Dispatcher(parsed_shit)
+@subscribe('396') # finished connecting, we can join
+def join(bot, args):
+    for channel in bot.channels:
+        bot.irc.cmd('JOIN', [channel])
 
-    @subscribe('PING')
-    def pong(inpu):
-        self.irc.cmd('PONG', inpu.paramlist)
+@subscribe('join') # someone joined
+def greet(bot, args):
+    channel = str(args[1])
+    chn = channel[1:-1]
+    c = chn[1:-1]
+    sleep(1.5)
+    bot.irc.msg(c, 'You must die..human.')
 
-badass_bot = Bot()
+@subscribe('quit') # someone quit
+def greet(bot, args):
+    channel = str(args[1])
+    chn = channel[1:-1]
+    c = chn[1:-1]
+    sleep(1.5)
+    bot.irc.msg(c, 'Another "victim"...')
+
+class Bot(object): # don't inherit from Irc, keeps things flat :D
+    def __init__(self, server, nick, port=6667, ssl=False, channels=[]):
+        self.channels = channels
+        self.irc = Irc(server, nick, port, ssl)
+        self._dispatch_events()
+
+    def _dispatch_events(self):
+        while True:
+            event = self.irc.events.get()
+            dispatch(self, event)
+
+badass_bot = Bot('irc.voxinfinitus.net', 'Kaa', 6697, True, channels=['#voxinfinitus','#landfill'])
