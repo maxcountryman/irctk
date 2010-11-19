@@ -1,10 +1,10 @@
-import re
-
 import gevent
 from gevent import socket
 from gevent.ssl import wrap_socket
 from gevent import sleep
 from gevent import queue
+
+from parser import parse_raw_input
 
 class Tcp(object):
     '''
@@ -64,11 +64,6 @@ class SslTcp(Tcp):
 
     def _recv_from_socket(self, nbytes):
         return self._socket.read(nbytes)
-
-irc_prefix_rem = re.compile(r'(.*?) (.*?) (.*)').match
-irc_noprefix_rem = re.compile(r'()(.*?) (.*)').match
-irc_netmask_rem = re.compile(r':?([^!@]*)!?([^@]*)@?(.*)').match
-irc_param_ref = re.compile(r'(?:^|(?<= ))(:.*|[^ ]+)').findall
 
 import gevent
 from gevent import socket
@@ -155,43 +150,28 @@ class Irc(object):
         self.conn = self._create_connection()
         gevent.spawn(self.conn.connect)
         self._set_nick(self.nick) # see comment directly below
-        self.cmd('USER', ['pybot', '3', '*', 'Python Bot']) # it's just cleaner, KISS
+        self.cmd('USER', 'pybot', '3', '*', 'Python Bot') # it's just cleaner, KISS
 
     def _parse_loop(self):
         while True:
             line = self.conn.iqueue.get()
-            trailing = ''
-            prefix = ''
-            
-            if line[0] == ':':
-                line = line[1:].split(' ', 1)
-                prefix = line[0]
-                line = line[1]
-            
-            if ' :' in line:
-                line = line.split(' :', 1)
-                trailing = line[1]
-                line = line[0]
-
-            args = line.split()
-            command = args.pop(0)
-            if trailing:
-                args.append(trailing)
-            
-            print '{0}: {1} {2}'.format(prefix, command, args)
-            event = IrcEvent(command, (prefix, args))
+            print line
+            parsed = parse_raw_input(line)
+            event = IrcEvent(parsed.command, parsed)
             self.events.put(event)
 
     def _set_nick(self, nick):
-        self.cmd('NICK', [nick])
+        self.cmd('NICK', nick, prefix=False)
 
     def msg(self, target, text):
-        self.cmd('PRIVMSG', [target, text])
+        self.cmd('PRIVMSG', target, text)
 
-    def cmd(self, command, params=None):
-        if params:
-            params[-1] = ':' + params[-1]
-            self._send(command + ' ' + ' '.join(params))
+    def cmd(self, command, *args, **kwargs):
+        if args and "prefix" in kwargs and kwargs["prefix"]:
+            self._send(command + ' ' + ' '.join(args[:-1]) + ':' + args[-1])
+        elif args:
+            print args
+            self._send(command + ' ' + ' '.join(args))
         else:
             self._send(command)
             
