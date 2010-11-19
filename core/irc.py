@@ -164,11 +164,13 @@ class Irc(object):
         self.cmd('NICK', nick, prefix=False)
 
     def msg(self, target, text):
-        self.cmd('PRIVMSG', target, text)
+        self.cmd('PRIVMSG', target, text, prefix=True)
 
     def cmd(self, command, *args, **kwargs):
-        if args and "prefix" in kwargs and kwargs["prefix"]:
-            self._send(command + ' ' + ' '.join(args[:-1]) + ':' + args[-1])
+        '''Send a command to server, prefix=True adds the ':' prefix.'''
+
+        if args and kwargs:
+            self._send(command + ' ' + ' '.join(args[:-1]) + ' :' + args[-1])
         elif args:
             print args
             self._send(command + ' ' + ' '.join(args))
