@@ -33,5 +33,7 @@ def subscribe(hook):
     return subscribe_wrapper
 
 def dispatch(bot, event):
+    '''Dispatch commands as hooks are read in the event loop.'''
+
     for func in sub_hooks[event.hook]:
         func(bot, event.args)

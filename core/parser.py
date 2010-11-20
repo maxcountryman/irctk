@@ -1,5 +1,6 @@
 def parse_raw_input(line):
     '''Takes raw input, parses it.'''
+
     trailing, nick, user, host, command_args = (None, None, None, None, None)
     
     if line.startswith(':'):
