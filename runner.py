@@ -1,14 +1,26 @@
 #! /usr/bin/env python
 
+import glob
+import sys
+
 import gevent
+import yaml
 
 from core.bot import Bot
 from plugins.base import *
 from plugins.greet import *
 
 if __name__ == '__main__':
-    badass_bot = lambda : Bot('irc.voxinfinitus.net', 'Kaa_', channels=['#voxinfinitus','#landfill'])
-    kickass_bot = lambda : Bot('irc.freenode.net', 'Kaa_', channels=['#freebsdsecured','#landfill'])
+    
+    if not glob.glob("settings.yaml"):
+        print "Error! Could not find the settings file. Please create 'settings.yaml' and fill it accordingly"
+        sys.exit()
+    
+    bots = []
+    settings_array = yaml.load_all(open("settings.yaml"))
+    for setting in settings_array:
+        print setting
+        bots.append((lambda: Bot(setting)))
 
-    jobs = [gevent.spawn(badass_bot),gevent.spawn(kickass_bot)]
+    jobs = [gevent.spawn(bot) for bot in bots]
     gevent.joinall(jobs)
