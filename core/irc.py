@@ -5,6 +5,7 @@ from gevent import sleep
 from gevent import queue
 
 import settings
+from parser import parse_raw_input
 
 class Tcp(object):
     '''
@@ -33,13 +34,10 @@ class Tcp(object):
 
     def disconnect(self):
         self._socket.close()
-
-    def _recv_from_socket(self, nbytes):
-        return self._socket.recv(nbytes)
     
     def _recv_loop(self):
         while True:
-            data = self._recv_from_socket(4096)
+            data = self._socket.recv(4096)
             self._ibuffer += data
             while '\r\n' in self._ibuffer:
                 line, self._ibuffer = self._ibuffer.split('\r\n', 1)
@@ -58,9 +56,6 @@ class SslTcp(Tcp):
 
     def _create_socket(self):
         return wrap_socket(Tcp._create_socket(self), server_side=False)
-
-    def _recv_from_socket(self, nbytes): # why is this necessary?
-        return self._socket.read(nbytes)
 
 class Irc(object):
     '''Handles the IRC protocol. Pass true if using SSL.'''
