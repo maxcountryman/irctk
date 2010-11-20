@@ -42,9 +42,7 @@ class Handler(object):
         self.bot = bot
         self.nick = ':' + bot.irc.nick
         self.event = unicode(event.args.trailing)
-        _is_cmd = self._is_command()
-        _is_pre = self._is_prefix()
-        _dispatch(bot, event, _is_cmd, _is_pre)
+        self._dispatch(bot, event, self._is_command(), self._is_prefix())
 
     def _is_command(self): 
         return self.event.startswith(self.bot.irc.nick)
@@ -52,21 +50,21 @@ class Handler(object):
     def _is_prefix(self):
         return self.event.startswith(self.bot.cmd_prefix)
 
-def _dispatch(bot, event, is_cmd, is_pre):
-    '''Dispatch hooks in respone to events.'''
+    def _dispatch(self, bot, event, is_cmd, is_pre):
+        '''Dispatch hooks in respone to events.'''
     
-    if is_cmd:
-        try:
-            func = cmd_hooks[event.args.trailing.split(': ')[1].split(' ')[0]]
-            func(bot, event.args)
-        except KeyError:
-            pass
-    elif is_pre:
-        try:
-            func = cmd_hooks[event.args.trailing.split(' ')[0].split('{0}'.format(bot.cmd_prefix))[-1]]
-            func(bot, event.args)
-        except KeyError:
-            pass
-    else:
-        for func in sub_hooks[event.hook]:
-            func(bot, event.args)
+        if is_cmd:
+            try:
+                func = cmd_hooks[event.args.trailing.split(': ')[1].split(' ')[0]]
+                func(bot, event.args)
+            except KeyError:
+                pass
+        elif is_pre:
+            try:
+                func = cmd_hooks[event.args.trailing.split(' ')[0].split('{0}'.format(bot.cmd_prefix))[-1]]
+                func(bot, event.args)
+            except KeyError:
+                pass
+        else:
+            for func in sub_hooks[event.hook]:
+                func(bot, event.args)
