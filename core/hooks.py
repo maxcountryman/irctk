@@ -46,17 +46,11 @@ class Handler(object):
         _is_pre = self._is_prefix()
         _dispatch(bot, event, _is_cmd, _is_pre)
 
-    def _sieve(self):
-        self.command = self.event.startswith(self.bot.irc.nick)
-        return self.command
+    def _is_command(self): 
+        return self.event.startswith(self.bot.irc.nick)
 
-    def _sieve_prefixed(self):
-        if self.event.startswith(self.bot.cmd_prefix):
-            self.cmd_prefix = True
-            return True
-        else:
-            self.command = False
-            return False
+    def _is_prefix(self):
+        return self.event.startswith(self.bot.cmd_prefix)
 
 def _dispatch(bot, event, is_cmd, is_pre):
     '''Dispatch hooks in respone to events.'''
