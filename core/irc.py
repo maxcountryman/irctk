@@ -4,6 +4,7 @@ from gevent.ssl import wrap_socket
 from gevent import sleep
 from gevent import queue
 
+import settings
 from parser import parse_raw_input
 
 class Tcp(object):

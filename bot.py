@@ -39,4 +39,4 @@ class Bot(object): # don't inherit from Irc, keeps things flat :D
             event = self.irc.events.get()
             dispatch(self, event)
 
-badass_bot = Bot('irc.voxinfinitus.net', 'Kaa', channels=['#voxinfinitus','#landfill'])
+badass_bot = Bot('irc.voxinfinitus.net', 'Kaa_', channels=['#voxinfinitus','#landfill'])
