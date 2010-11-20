@@ -58,8 +58,11 @@ def _dispatch(bot, event, sieve):
     '''Dispatch hooks in respone to events.'''
 
     if sieve is True:
-        func = cmd_hooks[event.args.trailing.split(': ')[1].split(' ')[0]]
-        func(bot, event.args)
+        try:
+            func = cmd_hooks[event.args.trailing.split(': ')[1].split(' ')[0]]
+            func(bot, event.args)
+        except KeyError:
+            pass
     else:
         for func in sub_hooks[event.hook]:
             func(bot, event.args)
