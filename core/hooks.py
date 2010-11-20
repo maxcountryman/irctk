@@ -38,44 +38,31 @@ def handle(bot, event):
 class Handler(object):
     '''Determines if an event is directed to subscriptions or commands.'''
 
-    def __init__(self, bot, event, command=False, cmd_prefix=False):
+    def __init__(self, bot, event):
         self.bot = bot
         self.nick = ':' + bot.irc.nick
-        self.event = str(event.args.trailing)
-        self.command = command
-        self.cmd_prefix = cmd_prefix
-        _sieve = self._sieve()
-        _sieve_prefixed = self._sieve_prefixed()
-        _dispatch(bot, event, _sieve, _sieve_prefixed)
+        self.event = unicode(event.args.trailing)
+        _is_cmd = self._is_command()
+        _is_pre = self._is_prefix()
+        _dispatch(bot, event, _is_cmd, _is_pre)
 
-    def _sieve(self):
-        if self.event.startswith(self.bot.irc.nick):
-            self.command = True
-            return self.command
-        else:
-            self.command = False
-            return self.command
+    def _is_command(self): 
+        return self.event.startswith(self.bot.irc.nick)
 
-    def _sieve_prefixed(self):
-        if self.event.startswith(self.bot.cmd_prefix):
-            self.cmd_prefix = True
-            return self.cmd_prefix
-        else:
-            self.command = False
-            return self.command
+    def _is_prefix(self):
+        return self.event.startswith(self.bot.cmd_prefix)
 
-def _dispatch(bot, event, sieve, sieve_prefixed):
+def _dispatch(bot, event, is_cmd, is_pre):
     '''Dispatch hooks in respone to events.'''
-
-    if sieve is True:
+    
+    if is_cmd:
         try:
             func = cmd_hooks[event.args.trailing.split(': ')[1].split(' ')[0]]
             func(bot, event.args)
         except KeyError:
             pass
-    elif sieve_prefixed is True:
+    elif is_pre:
         try:
-            print event.args.trailing.split(' ')[0].split('{0}'.format(bot.cmd_prefix))
             func = cmd_hooks[event.args.trailing.split(' ')[0].split('{0}'.format(bot.cmd_prefix))[-1]]
             func(bot, event.args)
         except KeyError:
