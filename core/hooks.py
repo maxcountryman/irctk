@@ -10,7 +10,7 @@ def command(hook=None):
     '''
 
     def command_wrapper(func):
-        if hook is None and func.func_name in cmd_hooks or hook in cmd_hooks:
+        if hook is None and (func.func_name in cmd_hooks or hook in cmd_hooks):
             raise ValueError('Duplicate command hook found.')
         elif hook is None:
             cmd_hooks[func.func_name] = func
@@ -49,31 +49,27 @@ class Handler(object):
         _dispatch(bot, event, _sieve, _sieve_prefixed)
 
     def _sieve(self):
-        if self.event.startswith(self.bot.irc.nick):
-            self.command = True
-            return self.command
-        else:
-            self.command = False
-            return self.command
+        self.command = self.event.startswith(self.bot.irc.nick)
+        return self.command
 
     def _sieve_prefixed(self):
         if self.event.startswith(self.bot.cmd_prefix):
             self.cmd_prefix = True
-            return self.cmd_prefix
+            return True
         else:
             self.command = False
-            return self.command
+            return False
 
 def _dispatch(bot, event, sieve, sieve_prefixed):
     '''Dispatch hooks in respone to events.'''
 
-    if sieve is True:
+    if sieve:
         try:
             func = cmd_hooks[event.args.trailing.split(': ')[1].split(' ')[0]]
             func(bot, event.args)
         except KeyError:
             pass
-    elif sieve_prefixed is True:
+    elif sieve_prefixed:
         try:
             print event.args.trailing.split(' ')[0].split('{0}'.format(bot.cmd_prefix))
             func = cmd_hooks[event.args.trailing.split(' ')[0].split('{0}'.format(bot.cmd_prefix))[-1]]
