@@ -1,7 +1,7 @@
 *.pyc
 *.py.*
 .*
-*.yaml*
+*.yaml
 logs/
 bin/
 include/

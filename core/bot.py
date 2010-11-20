@@ -7,9 +7,9 @@ class Bot(object): # don't inherit from Irc, keeps things flat :D
     '''
 
     def __init__(self, settings):
-        self.channels = settings["channels"]
-        self.irc = Irc(settings["server"], settings["nick"], settings["port"], settings["ssl"])
-        self.cmd_prefix = settings["prefix"]
+        self.channels = settings['channels']
+        self.irc = Irc(settings['server'], settings['nick'], settings['port'], settings['ssl'])
+        self.cmd_prefix = settings['prefix']
         self._dispatch_events()
 
     def _dispatch_events(self):

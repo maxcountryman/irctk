@@ -38,13 +38,15 @@ def handle(bot, event):
 class Handler(object):
     '''Determines if an event is directed to subscriptions or commands.'''
 
-    def __init__(self, bot, event, command=False):
+    def __init__(self, bot, event, command=False, cmd_prefix=False):
         self.bot = bot
         self.nick = ':' + bot.irc.nick
         self.event = str(event.args.trailing)
         self.command = command
+        self.cmd_prefix = cmd_prefix
         _sieve = self._sieve()
-        _dispatch(bot, event, _sieve)
+        _sieve_prefixed = self._sieve_prefixed()
+        _dispatch(bot, event, _sieve, _sieve_prefixed)
 
     def _sieve(self):
         if self.event.startswith(self.bot.irc.nick):
@@ -54,12 +56,27 @@ class Handler(object):
             self.command = False
             return self.command
 
-def _dispatch(bot, event, sieve):
+    def _sieve_prefixed(self):
+        if self.event.startswith(self.bot.cmd_prefix):
+            self.cmd_prefix = True
+            return self.cmd_prefix
+        else:
+            self.command = False
+            return self.command
+
+def _dispatch(bot, event, sieve, sieve_prefixed):
     '''Dispatch hooks in respone to events.'''
 
     if sieve is True:
         try:
             func = cmd_hooks[event.args.trailing.split(': ')[1].split(' ')[0]]
+            func(bot, event.args)
+        except KeyError:
+            pass
+    elif sieve_prefixed is True:
+        try:
+            print event.args.trailing.split(' ')[0].split('{0}'.format(bot.cmd_prefix))
+            func = cmd_hooks[event.args.trailing.split(' ')[0].split('{0}'.format(bot.cmd_prefix))[-1]]
             func(bot, event.args)
         except KeyError:
             pass
