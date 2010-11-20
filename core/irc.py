@@ -4,7 +4,6 @@ from gevent.ssl import wrap_socket
 from gevent import sleep
 from gevent import queue
 
-import settings
 from parser import parse_raw_input
 
 class Tcp(object):
@@ -102,13 +101,12 @@ class Irc(object):
         if args and kwargs:
             self._send(command + ' ' + ' '.join(args[:-1]) + ' :' + args[-1])
         elif args:
-            print args
             self._send(command + ' ' + ' '.join(args))
         else:
             self._send(command)
             
     def _send(self, s):
-        print 'send: {0}'.format(s)
+        print 'send to {1}: {0}'.format(s, self.server)
         self.conn.oqueue.put(s)
 
 class IrcEvent(object):
