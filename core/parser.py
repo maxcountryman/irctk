@@ -17,7 +17,7 @@ def parse_raw_input(line):
     return Input(nick, user, host, command, command_args, trailing)
 
 class Input(object):
-    '''Stores parsed input.'''
+    '''Stores parsed input. `:prefix command [args] :trailing`'''
 
     def __init__(self, nick, user, host, command, command_args, trailing):
         self.nick = nick

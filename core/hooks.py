@@ -32,8 +32,34 @@ def subscribe(hook):
     
     return subscribe_wrapper
 
-def dispatch(bot, event):
-    '''Dispatch commands as hooks are read in the event loop.'''
+def handle(bot, event):
+    return Handler(bot, event)
 
-    for func in sub_hooks[event.hook]:
+class Handler(object):
+    '''Determines if an event is directed to subscriptions or commands.'''
+
+    def __init__(self, bot, event, command=False):
+        self.bot = bot
+        self.nick = ':' + bot.irc.nick
+        self.event = str(event.args.trailing)
+        self.command = command
+        _sieve = self._sieve()
+        _dispatch(bot, event, _sieve)
+
+    def _sieve(self):
+        if self.event.startswith(self.bot.irc.nick):
+            self.command = True
+            return self.command
+        else:
+            self.command = False
+            return self.command
+
+def _dispatch(bot, event, sieve):
+    '''Dispatch hooks in respone to events.'''
+
+    if sieve is True:
+        func = cmd_hooks[event.args.trailing.split(': ')[1].split(' ')[0]]
         func(bot, event.args)
+    else:
+        for func in sub_hooks[event.hook]:
+            func(bot, event.args)

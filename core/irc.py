@@ -79,8 +79,8 @@ class Irc(object):
     def _connect(self):
         self.conn = self._create_connection()
         gevent.spawn(self.conn.connect)
-        self._set_nick(self.nick) # see comment directly below
-        self.cmd('USER', 'pybot', '3', '*', 'Python Bot') # it's just cleaner, KISS
+        self._set_nick(self.nick)
+        self.cmd('USER', 'pybot', '3', '*', 'Python Bot') # let's get these values from settings.py
 
     def _parse_loop(self):
         while True:
