@@ -12,6 +12,7 @@ from plugins.base import *
 from plugins.greet import *
 from plugins.google import *
 from plugins.quotes import *
+from plugins.python import *
 
 if __name__ == '__main__':
     
@@ -21,9 +22,9 @@ if __name__ == '__main__':
     
     bots = []
     settings_array = yaml.load_all(open('settings.yaml'))
-    for setting in settings_array:
-        print setting
-        bots.append((lambda : Bot(setting)))
+    
+    g = lambda s: Bot(s)
 
-    jobs = [gevent.spawn(bot) for bot in bots]
+    jobs = [gevent.spawn(g, s) for s in settings_array]
     gevent.joinall(jobs)
+

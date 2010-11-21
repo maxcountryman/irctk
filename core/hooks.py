@@ -1,4 +1,5 @@
 from collections import defaultdict
+import inspect
 
 cmd_hooks = {} # store functions in a standard dictionary
 sub_hooks = defaultdict(list) # store functions in a list associated with a hook
@@ -10,15 +11,22 @@ def command(hook=None):
     '''
 
     def command_wrapper(func):
-        if hook is None and (func.func_name in cmd_hooks or hook in cmd_hooks):
+        if hook is None and func.func_name in cmd_hooks:
             raise ValueError('Duplicate command hook found.')
-        elif hook is None:
+        elif hook in cmd_hooks:
+            raise ValueError('Duplicate command hook found.')
+        
+        if hook is None:
             cmd_hooks[func.func_name] = func
         else:
             cmd_hooks[hook] = func
-        return func
-
-    return command_wrapper
+            
+            return func
+        
+    if hook is not None:
+        return command_wrapper
+    else:
+        return command_wrapper(hook)
 
 def subscribe(hook):
     '''Subscribe a function or functions to an event. For example 
