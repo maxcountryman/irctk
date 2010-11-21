@@ -64,11 +64,15 @@ class Handler(object):
                 func(bot, event.args)
             except KeyError:
                 pass
+            except IndexError:
+                pass
         elif is_pre:
             try:
                 func = cmd_hooks[trl.split()[0].split(bot.cmd_prefix)[-1]]
                 func(bot, event.args)
             except KeyError:
+                pass
+            except IndexError:
                 pass
         else:
             for func in sub_hooks[event.hook]:
