@@ -61,12 +61,13 @@ class SslTcp(Tcp):
 class Irc(object):
     '''Handles the IRC protocol. Pass true if using SSL.'''
 
-    def __init__(self, server, nick, settings, port=6667, ssl=False):
-        self.server = server
-        self.nick = nick
-        self.port = port
-        self.ssl = ssl
-        self.settings = settings
+    def __init__(self, settings):
+        self.server = settings["server"]
+        self.nick = settings["nick"]
+        self.port = settings["port"]
+        self.ssl = settings["ssl"]
+        self.user = settings["user"]
+        self.realname = settings["realname"]
         self.events = queue.Queue() # responses from the server
         
         self._connect()
@@ -80,7 +81,7 @@ class Irc(object):
         self.conn = self._create_connection()
         gevent.spawn(self.conn.connect)
         self._set_nick(self.nick)
-        self.cmd('USER', self.settings['user'], '3', '*', self.settings['realname'])
+        self.cmd('USER', self.user, '3', '*', self.realname)
 
     def _parse_loop(self):
         while True:

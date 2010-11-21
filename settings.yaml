@@ -7,4 +7,12 @@ user: kaa
 realname: Kaa the Python
 channels: ['#voxinfinitus', '#landfill',]
 prefix: '@'
-
+---
+server: irc.freenode.net
+port: 6667
+ssl: False
+nick: Blabla__
+user: Blabla__
+realname: Kaa the Python
+channels: ['##devil']
+prefix: '@'
