@@ -36,7 +36,9 @@ def handle(bot, event):
     return Handler(bot, event)
 
 class Handler(object):
-    '''Determines if an event is directed to subscriptions or commands.'''
+    '''Determines if an event is directed to subscriptions or commands. 
+       Either prefixed with bot.irc.nick or bot.cmd_prefix.
+    '''
 
     def __init__(self, bot, event):
         self.bot = bot
@@ -51,17 +53,21 @@ class Handler(object):
         return self.event.startswith(self.bot.cmd_prefix)
 
     def _dispatch(self, bot, event, is_cmd, is_pre):
-        '''Dispatch hooks in respone to events.'''
-    
+        '''Dispatch hooks in respone to events. Nick prefixed or prefixed,
+           is_cmd and is_pre respectively.
+        '''
+        
+        trl = event.args.trailing
+
         if is_cmd:
             try:
-                func = cmd_hooks[event.args.trailing.split(': ')[1].split(' ')[0]]
+                func = cmd_hooks[trl.split(': ')[1].split()[0]]
                 func(bot, event.args)
             except KeyError:
                 pass
         elif is_pre:
             try:
-                func = cmd_hooks[event.args.trailing.split(' ')[0].split('{0}'.format(bot.cmd_prefix))[-1]]
+                func = cmd_hooks[trl.split()[0].split(bot.cmd_prefix)[-1]]
                 func(bot, event.args)
             except KeyError:
                 pass
