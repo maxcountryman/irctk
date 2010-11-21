@@ -11,6 +11,7 @@ from core.bot import Bot
 from plugins.base import *
 from plugins.greet import *
 from plugins.google import *
+from plugins.quotes import *
 
 if __name__ == '__main__':
     
@@ -22,7 +23,7 @@ if __name__ == '__main__':
     settings_array = yaml.load_all(open('settings.yaml'))
     for setting in settings_array:
         print setting
-        bots.append((lambda: Bot(setting)))
+        bots.append((lambda : Bot(setting)))
 
     jobs = [gevent.spawn(bot) for bot in bots]
     gevent.joinall(jobs)
