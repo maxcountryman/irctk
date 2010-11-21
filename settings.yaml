@@ -1,14 +1,10 @@
 ---
 server: irc.voxinfinitus.net
-port: 6667
-ssl: False
-nick: Blabla__
-channels: ['#voxinfinitus', '#landfill']
+port: 6697
+ssl: True
+nick: Kaa
+user: kaa
+realname: Kaa the Python
+channels: ['#voxinfinitus', '#landfill',]
 prefix: '@'
----
-server: irc.freenode.net
-port: 6667
-ssl: False
-nick: Blabla__
-channels: ['##devil']
-prefix: '@'
+
