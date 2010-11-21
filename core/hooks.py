@@ -11,9 +11,7 @@ def command(hook=None):
     '''
 
     def command_wrapper(func):
-        if hook is None and func.func_name in cmd_hooks:
-            raise ValueError('Duplicate command hook found.')
-        elif hook in cmd_hooks:
+        if hook is None and func.func_name in cmd_hooks or hook in cmd_hooks:
             raise ValueError('Duplicate command hook found.')
         
         if hook is None:
