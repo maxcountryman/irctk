@@ -42,7 +42,6 @@ class Handler(object):
 
     def __init__(self, bot, event):
         self.bot = bot
-        self.nick = ':' + bot.irc.nick
         self.event = str(event.args.trailing) # unicode breaks
         self._dispatch(bot, event, self._is_command(), self._is_prefix())
 
