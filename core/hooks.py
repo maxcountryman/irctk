@@ -1,26 +1,27 @@
+from inspect import isfunction
+from functools import wraps
 from collections import defaultdict
 
 cmd_hooks = {} # store functions in a standard dictionary
 sub_hooks = defaultdict(list) # store functions in a list associated with a hook
 
-def command(hook=None):
+def command(func):
     '''Associate a command hook with a function. Uses cmd_hooks dict.'''
 
-    def command_wrapper(func):
-        if hook in cmd_hooks or not hook and func.func_name in cmd_hooks:
-            raise ValueError('Duplicate command hook found.')
+    def wrapper(*args, **kwargs):
+        print args 
+        print kwargs
+        return func(*args, **kwargs)
         
-        if hook:
-            cmd_hooks[hook] = func
-        else:
-            cmd_hooks[func.func_name] = func
-        
-        return func
+    ret = lambda func: wraps(func)(wrapper)
     
-    if hook:
-        return command_wrapper
+    if isfunction(func):
+        cmd_hooks[func.func_name] = func
+        return ret(func)
     else:
-        return command_wrapper(hook)
+        name = func
+        cmd_hooks[name] = func
+        return ret
 
 def subscribe(hook):
     '''Subscribe a function to an event. Uses sub_hooks dict.'''
