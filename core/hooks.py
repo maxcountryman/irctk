@@ -9,8 +9,6 @@ def command(func):
     '''Associate a command hook with a function. Uses cmd_hooks dict.'''
 
     def wrapper(*args, **kwargs):
-        print args 
-        print kwargs
         return func(*args, **kwargs)
         
     ret = lambda func: wraps(func)(wrapper)
@@ -19,8 +17,7 @@ def command(func):
         cmd_hooks[func.func_name] = func
         return ret(func)
     else:
-        name = func
-        cmd_hooks[name] = func
+        cmd_hooks[args] = func
         return ret
 
 def subscribe(hook):
