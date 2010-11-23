@@ -8,13 +8,6 @@ import yaml
 
 from core.bot import Bot
 
-# better find a way to normalize plugin imports
-from plugins.base import *
-from plugins.greet import *
-from plugins.google import *
-from plugins.quotes import *
-from plugins.python import *
-
 if __name__ == '__main__':
     
     if not os.path.isfile('settings.yaml'):
