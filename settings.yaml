@@ -7,6 +7,7 @@ user: kaa
 realname: Kaa the Python
 channels: ['#voxinfinitus', '#landfill',]
 prefix: '@'
+plugins: ['ping','376','greet','quote',]
 ---
 server: irc.freenode.net
 port: 6667
@@ -16,3 +17,4 @@ user: kaa
 realname: Kaa the Python
 channels: ['#landfill',]
 prefix: '@'
+plugins: ['ping','376','greet',]
