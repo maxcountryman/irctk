@@ -1,12 +1,7 @@
-*.pyc
-*.py.*
 .*
-*.yaml
-*.yaml.*
-logs/
-bin/
-include/
-lib/
-build/
+*.pyc
+bin/*
+build/*
+include/*
+lib/*
 !.gitignore
-
