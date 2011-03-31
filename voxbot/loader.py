@@ -19,3 +19,8 @@ def load_plugins(bot, plugins):
             logger.warning('Failed loading plugin with error: ' + e)
     return [sys.modules[p].__dict__[p](bot) for p in plugins] # run 'em
 
+def reload_plugins(plugin):
+    '''Reloads a plugin, `plugin`.'''
+    
+    if plugin in sys.modules:
+        reload(sys.modules[plugin])
