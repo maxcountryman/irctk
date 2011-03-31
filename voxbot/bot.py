@@ -1,6 +1,5 @@
 from voxbot import irc
 from voxbot import loader
-from voxbot import reloader
 
 import json
 import sys
@@ -34,12 +33,16 @@ class Bot(object):
             
             try:
                 loader.load_plugins(bot, plugins)
+                if msgs.startswith(chr(1)) and 'PING' in msgs:
+                    ping = msgs[msgs.find('PING'):].split(' ', 1)[-1]
+                    ping = 'PING ' + ping
+                    bot.ctcp_reply(self.user, ping)
                 if msgs.startswith('^reload') and self.user in owners:
                     self.settings = Config('config.py').config.SETTINGS
                     plugins = self.settings['plugins']
                     plugin = msgs[msgs.find('^reload'):].split(' ', 1)[-1]
                     if not plugin == '^reload':
-                        reloader.reload_plugins('voxbot.' + plugin)
+                        loader.reload_plugins('voxbot.' + plugin)
                         self.reply('Reloading {0}'.format(plugin))
                     elif plugin in plugins:
                         for plugin in plugins:
@@ -71,7 +74,8 @@ class Config(object):
         self.config = self.from_pyfile(filename)
         
     def from_pyfile(self, filename):
-        filename = os.path.join(os.path.abspath('.'), 'config.py')
+        filename = os.path.join(os.path.abspath('.'), filename)
+        
         try:
             imp.load_source('config', filename)
             config = sys.modules['config'].__dict__['Config']

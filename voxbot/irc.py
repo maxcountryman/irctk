@@ -149,6 +149,14 @@ class Irc(object):
     def _join_chans(self, channels):
         return [self.cmd('JOIN', channel) for channel in channels]
     
+    def ctcp_reply(self, target, msg):
+        msg = chr(1) + msg + chr(1)
+        self.notice(target, msg)
+    
+    def ctcp_send(self, target, msg):
+        msg = chr(1) + msg + chr(1)
+        self.msg(target, msg)
+    
     def does(self, target, msg):
         msg = chr(1) + 'ACTION ' + msg + chr(1)
         self.msg(target, msg)
@@ -158,6 +166,9 @@ class Irc(object):
     
     def msg(self, target, msg):
         self.cmd('PRIVMSG', (target + ' :' + msg))
+        
+    def notice(self, target, msg):
+        self.cmd('NOTICE', (target + ' :' + msg))
     
     def cmd(self, command, args, prefix=None):
         
