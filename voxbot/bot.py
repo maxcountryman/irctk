@@ -21,6 +21,8 @@ class Bot(object):
             self.irc.reply(self.user, msg)
     
     def _event_loop(self):
+        '''Main event loop. All the magic happens here.'''
+        
         while True:
             bot = self.irc
             logger = self.irc.logger
@@ -33,23 +35,17 @@ class Bot(object):
             
             try:
                 loader.load_plugins(bot, plugins)
-                if msgs.startswith(chr(1)) and 'PING' in msgs:
-                    ping = msgs[msgs.find('PING'):].split(' ', 1)[-1]
-                    ping = 'PING ' + ping
-                    bot.ctcp_reply(self.user, ping)
                 if msgs.startswith('^reload') and self.user in owners:
                     self.settings = Config('config.py').config.SETTINGS
                     plugins = self.settings['plugins']
                     plugin = msgs[msgs.find('^reload'):].split(' ', 1)[-1]
-                    if not plugin == '^reload':
+                    if not plugin == '^reload' and plugin in plugins:
                         loader.reload_plugins('voxbot.' + plugin)
                         self.reply('Reloading {0}'.format(plugin))
-                    elif plugin in plugins:
-                        for plugin in plugins:
-                            reloader.reload_plugins('voxbot.' + plugin)
-                        self.reply('Reloading plugins')
                     else:
-                        self.reply('Plugin not found')
+                        for plugin in plugins:
+                            loader.reload_plugins('voxbot.' + plugin)
+                        self.reply('Reloading plugins')
                 
                 if msgs.startswith('^help'):
                     loaded = ' '.join(plugins)
@@ -65,10 +61,11 @@ class Bot(object):
                         self.reply('Plugin not found')
                 
             except Exception, e: # catch all exceptions, don't die for plugins
-                logger.warning('Error loading plugins: ' + str(e))
+                logger.error('Error loading plugins: ' + str(e))
 
 
 class Config(object):
+    '''This class returns a config object from a file, `filename`.'''
     
     def __init__(self, filename):
         self.config = self.from_pyfile(filename)
@@ -85,6 +82,8 @@ class Config(object):
 
 
 class Plugin(object):
+    '''This is a base class from which plugins may inherit. It provides some
+    normalized variables which aim to make writing plugins a sane endevour.'''
     
     def __init__(self, bot):
         self.bot = bot
@@ -98,8 +97,7 @@ class Plugin(object):
     
     def reply(self, msg, channel=None, action=False):
         '''Directs a response to either a channel or user. If `channel`,
-        overrides the target.
-        '''
+        overrides the target.'''
         
         if action:
             msg =  chr(1) + 'ACTION ' + msg + chr(1)
