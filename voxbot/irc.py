@@ -1,5 +1,5 @@
-import logging
 import gevent
+import logging
 
 from gevent import socket, queue
 from gevent.ssl import wrap_socket
@@ -12,6 +12,7 @@ formatter = \
     logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
+
 
 class Tcp(object):
     '''Handles TCP connections, `timeout` is in secs.'''
@@ -31,8 +32,8 @@ class Tcp(object):
     
     def connect(self):
         self._socket.connect((self.host, self.port))
+        jobs = [gevent.spawn(self._recv_loop), gevent.spawn(self._send_loop)]
         try:
-            jobs = [gevent.spawn(self._recv_loop), gevent.spawn(self._send_loop)]
             gevent.joinall(jobs)
         finally:
             gevent.killall(jobs)

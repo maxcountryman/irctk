@@ -1,15 +1,17 @@
-import gevent
+from voxbot import irc
+from voxbot import loader
+from voxbot import reloader
+
 import json
 import sys
+import os
+import imp
 
-import voxbot.irc
-import voxbot.loader
-import voxbot.reloader
 
 class Bot(object):
     
     def __init__(self, settings):
-        self.irc = voxbot.irc.Irc(settings)
+        self.irc = irc.Irc(settings)
         self.settings = settings
         self._event_loop()
     
@@ -28,20 +30,23 @@ class Bot(object):
             self.sender = line['args'][0]
             self.user = line['prefix'].split('!', 1)[0]
             owners = self.settings['owners']
-            plugins = json.load(open('plugins.json'))
+            plugins = self.settings['plugins']
             
             try:
-                voxbot.loader.load_plugins(bot, plugins)
-                if msgs.startswith('^reload') and self.user in owners: 
-                    plugins = json.load(open('plugins.json'))
+                loader.load_plugins(bot, plugins)
+                if msgs.startswith('^reload') and self.user in owners:
+                    self.settings = Config('config.py').config.SETTINGS
+                    plugins = self.settings['plugins']
                     plugin = msgs[msgs.find('^reload'):].split(' ', 1)[-1]
                     if not plugin == '^reload':
-                        voxbot.reloader.reload_plugins('voxbot.' + plugin)
+                        reloader.reload_plugins('voxbot.' + plugin)
                         self.reply('Reloading {0}'.format(plugin))
-                    else:
+                    elif plugin in plugins:
                         for plugin in plugins:
-                            voxbot.reloader.reload_plugins('voxbot.' + plugin)
+                            reloader.reload_plugins('voxbot.' + plugin)
                         self.reply('Reloading plugins')
+                    else:
+                        self.reply('Plugin not found')
                 
                 if msgs.startswith('^help'):
                     loaded = ' '.join(plugins)
@@ -58,6 +63,21 @@ class Bot(object):
                 
             except Exception, e: # catch all exceptions, don't die for plugins
                 logger.warning('Error loading plugins: ' + str(e))
+
+
+class Config(object):
+    
+    def __init__(self, filename):
+        self.config = self.from_pyfile(filename)
+        
+    def from_pyfile(self, filename):
+        filename = os.path.join(os.path.abspath('.'), 'config.py')
+        try:
+            imp.load_source('config', filename)
+            config = sys.modules['config'].__dict__['Config']
+            return config
+        except ImportError, e:
+            print('Config error: ' + e) # not ideal, should be logger
 
 
 class Plugin(object):
