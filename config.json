@@ -2,13 +2,13 @@ import voxbot
 import gevent
 
 SETTINGS = {
-    'server': 'irc.voxinfinitus.net', 
+    'server': 'sagan.voxinfinitus.net', 
     'nick': 'Kaa', 
     'realname': 'Kaa the Python', 
     'port': 6697, 
     'ssl': True, 
     'channels': ['#testing'], 
-    'owners': ['doraemon']
+    'plugins': ['test']
     }
 
 try:
