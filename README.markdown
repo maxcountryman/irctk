@@ -11,7 +11,6 @@ get you set up.
 
 Writing a Plugin
 ----------------
-
 Plugins are easy to write. Begin by importing the Plugin super class:
 
 `from voxbot.bot import Plugin`
@@ -23,17 +22,18 @@ command and thesecond will either be the command, if there are no args after
 the command, or the args that follow the command.
 
 
-`class Myplugin(Plugin):
-    '''usage: ^my_command [args]'''
-    
-    def __init__(self, bot)
-        super(Myplugin, self).__init__(bot)
-        my_command()
+    class Myplugin(Plugin):
+        '''usage: ^my_command [args]'''
         
-    @Plugin.command('^my_command')
-    def my_command(self, *args)
-        if args[0] != args[-1]
-            self.reply(args[-1])`
+        def __init__(self, bot)
+            super(Myplugin, self).__init__(bot)
+            my_command()
+            
+        @Plugin.command('^my_command')
+        def my_command(self, *args)
+            if args[0] != args[-1]
+                self.reply(args[-1])
+
 
 Because the super class provides several shortcuts, such as `reply()`, it's 
 often recommended to use `super()` to make sure these are available in your
