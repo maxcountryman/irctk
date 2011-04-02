@@ -1,9 +1,9 @@
 About
--------------------------
+=====
 Kaa is a simple, modular IRC bot written in Python using Gevent.
 
 Installation
------
+------------
 Grab the source. For now I recommend using pip to install to a virtualenv. The 
 requirements.txt should get you set up. Note that you can exclude modules like
 python-bitly-api if you don't want or need URL shortening.
