@@ -13,5 +13,4 @@ class Debug(Plugin):
     
     @Plugin.command('^debug')
     def _debug(self, *args):
-        if args:
-            self.reply(str(args))
+        self.reply(str(args))

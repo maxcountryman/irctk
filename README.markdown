@@ -27,7 +27,7 @@ the command, or the args that follow the command.
         
         def __init__(self, bot)
             super(Myplugin, self).__init__(bot)
-            my_command()
+            self.my_command()
             
         @Plugin.command('^my_command')
         def my_command(self, *args)
@@ -38,3 +38,19 @@ the command, or the args that follow the command.
 Because the super class provides several shortcuts, such as `reply()`, it's 
 often recommended to use `super()` to make sure these are available in your
 plugin class.
+
+In order to use the plugin you will need to add it to the list of configured
+plugins to load. Typically something like this should work, saved as config.py:
+
+    class Config(object):
+    
+    SETTINGS = {
+        'server': 'irc.voxinfinitus.net', 
+        'nick': 'Kaa', 
+        'realname': 'Kaa the Python', 
+        'port': 6697, 
+        'ssl': True, 
+        'channels': ['#testing',],
+        'plugins': ['Myplugin'],
+        'owners': ['foobar']
+    }

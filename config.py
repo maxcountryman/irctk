@@ -1,7 +1,7 @@
 class Config(object):
     
     SETTINGS = {
-    'server': 'irc.voxinfinitus.net', 
+    'server': 'mtm.voxinfinitus.net', 
     'nick': 'Kaa', 
     'realname': 'Kaa the Python', 
     'port': 6697, 
@@ -22,8 +22,10 @@ class Config(object):
         'Imdb',
         'Scales',
         'Bf',
-        'Action'
+        'Action',
+        'Ctcp',
+        'Highfive',
+        'Beer'
         ],
     'owners': ['doraemon']
     }
-

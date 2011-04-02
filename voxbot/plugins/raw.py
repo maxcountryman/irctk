@@ -1,3 +1,5 @@
+'''A plugin that allows owners to send commands in raw to the server.'''
+
 from voxbot.bot import Plugin
 
 class Raw(Plugin):
@@ -9,6 +11,8 @@ class Raw(Plugin):
     
     @Plugin.command('^raw')
     def _send_raw(self, *args):
-        if self.user in self.owners:
+        if not self.user in self.owners:
+            return self.reply('You do not have proper privileges')
+        else: 
             s = args[-1] 
             self.bot._send(s)

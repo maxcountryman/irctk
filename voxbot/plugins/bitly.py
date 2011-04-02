@@ -10,7 +10,7 @@ class Bitly(Plugin):
         super(Bitly, self).__init__(bot)
         self._shorten()
     
-    @Plugin.command('http://')
+    @Plugin.command('http://', is_in=True)
     def _shorten(self, *args):
         url = args[-1]
         if 'bit.ly' in url or '.' not in url:

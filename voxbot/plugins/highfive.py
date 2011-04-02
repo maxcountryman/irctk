@@ -7,7 +7,7 @@ class Highfive(Plugin):
         super(Highfive, self).__init__(bot)
         self._respond()
     
-    @Plugin.command('^ACTION high fives {0}'.format(self.bot.nick))
     def _respond(self):
-        self.bot.does(self.sender, 'high fives ' + self.user)
+        if self.msgs.startswith(chr(1) + 'ACTION high fives {0}'.format(self.bot.nick)):
+            self.bot.does(self.sender, 'high fives ' + self.user)
 

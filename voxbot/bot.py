@@ -109,13 +109,17 @@ class Plugin(object):
             self.bot.reply(self.user, msg)
     
     @staticmethod
-    def command(command):
+    def command(command, is_in=False):
         def _decorator(func):
             def _wrapper(self):
                 args = self.msgs[self.msgs.find(command):].split(' ', 1)[-1]
                 cmd = self.msgs[self.msgs.find(command):].split(' ', 1)[0]
-                if self.msgs.startswith(command):
-                    return func(self, cmd, args)
+                if is_in:
+                    if command in self.msgs:
+                        return func(self, cmd, args)
+                else:
+                    if self.msgs.startswith(command):
+                        return func(self, cmd, args)
             return _wrapper
         return _decorator
     
