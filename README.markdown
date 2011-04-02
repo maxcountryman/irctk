@@ -1,13 +1,12 @@
-Kaa
-===
-A simple, modular IRC bot
+About
 -------------------------
 Kaa is a simple, modular IRC bot written in Python using Gevent.
 
-Setup
+Installation
 -----
-Grab the source, I recommend using pip to install. The requirements.txt should 
-get you set up.
+Grab the source. For now I recommend using pip to install to a virtualenv. The 
+requirements.txt should get you set up. Note that you can exclude modules like
+python-bitly-api if you don't want or need URL shortening.
 
 Writing a Plugin
 ----------------
@@ -21,11 +20,11 @@ will automatically return a tuple to your function. The first element of the
 tuple will be the command and the second will either be the command, if there 
 are no args after the command, or the args that follow the command.
 
-    class Myplugin(Plugin):
+    class MyPlugin(Plugin):
         '''usage: ^my_command [args]'''
         
         def __init__(self, bot)
-            super(Myplugin, self).__init__(bot)
+            super(MyPlugin, self).__init__(bot)
             self.my_command()
             
         @Plugin.command('^my_command')
@@ -35,20 +34,21 @@ are no args after the command, or the args that follow the command.
 
 Because the super class provides several shortcuts, such as `reply()`, it's 
 often recommended to use `super()` to make sure these are available in your
-plugin class.
+plugin class. Check out bot.py for a look at what's available.
 
 In order to use the plugin you will need to add it to the list of configured
 plugins to load. Typically something like this should work, saved as config.py:
 
     class Config(object):
-    
+        '''Settings for our bot.'''
+        
         SETTINGS = {
             'server': 'irc.voxinfinitus.net', 
             'nick': 'Kaa', 
             'realname': 'Kaa the Python', 
             'port': 6697, 
             'ssl': True, 
-            'channels': ['#testing',],
-            'plugins': ['Myplugin'],
+            'channels': ['#testing'],
+            'plugins': ['MyPlugin'],
             'owners': ['foobar']
         }

@@ -1,7 +1,7 @@
 class Config(object):
     
     SETTINGS = {
-    'server': 'mtm.voxinfinitus.net', 
+    'server': 'irc.voxinfinitus.net', 
     'nick': 'Kaa', 
     'realname': 'Kaa the Python', 
     'port': 6697, 
@@ -15,7 +15,7 @@ class Config(object):
     'plugins': [
         'Debug', 
         'Google', 
-        'Radioreddit', 
+        'RadioReddit', 
         'Bitly', 
         'Raw', 
         'Python', 
@@ -24,7 +24,7 @@ class Config(object):
         'Bf',
         'Action',
         'Ctcp',
-        'Highfive',
+        'HighFive',
         'Beer'
         ],
     'owners': ['doraemon']

@@ -3,15 +3,14 @@
 from voxbot.bot import Plugin
 from voxbot.utils import bitly
 
-import time
 import urllib
 import json
 
-class Radioreddit(Plugin):
+class RadioReddit(Plugin):
     '''usage: ^np [stream]; ^status [stream]; ^info'''
     
     def __init__(self, bot):
-        super(Radioreddit, self).__init__(bot)
+        super(RadioReddit, self).__init__(bot)
         self._np()
         self._status()
         self._info()

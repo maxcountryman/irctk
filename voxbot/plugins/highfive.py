@@ -1,10 +1,10 @@
 from voxbot.bot import Plugin
 
-class Highfive(Plugin):
+class HighFive(Plugin):
     '''usage: automatic'''
     
     def __init__(self, bot):
-        super(Highfive, self).__init__(bot)
+        super(HighFive, self).__init__(bot)
         self._respond()
     
     def _respond(self):
