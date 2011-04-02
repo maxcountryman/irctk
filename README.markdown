@@ -6,7 +6,7 @@ Installation
 ------------
 Grab the source:
 
-`$ git clone git://github.com/maxcountryman/kaa.git`
+    $ git clone git://github.com/maxcountryman/kaa.git
 
 For now I recommend using pip to install to a virtualenv. The requirements.txt 
 should get you set up. Note that you can exclude modules like bitly-api-python 
@@ -16,7 +16,7 @@ Writing a Plugin
 ----------------
 Plugins are easy to write. Begin by importing the Plugin super class:
 
-`from voxbot.bot import Plugin`
+    from voxbot.bot import Plugin
 
 For convenience, `Plugin` provides a decorator for commands, 
 `@Plugin.command()`. This should be used to assign a command to a function. It 
