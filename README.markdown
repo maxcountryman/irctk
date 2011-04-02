@@ -44,13 +44,13 @@ plugins to load. Typically something like this should work, saved as config.py:
 
     class Config(object):
     
-    SETTINGS = {
-        'server': 'irc.voxinfinitus.net', 
-        'nick': 'Kaa', 
-        'realname': 'Kaa the Python', 
-        'port': 6697, 
-        'ssl': True, 
-        'channels': ['#testing',],
-        'plugins': ['Myplugin'],
-        'owners': ['foobar']
-    }
+        SETTINGS = {
+            'server': 'irc.voxinfinitus.net', 
+            'nick': 'Kaa', 
+            'realname': 'Kaa the Python', 
+            'port': 6697, 
+            'ssl': True, 
+            'channels': ['#testing',],
+            'plugins': ['Myplugin'],
+            'owners': ['foobar']
+        }
