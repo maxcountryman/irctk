@@ -4,9 +4,13 @@ Kaa is a simple, modular IRC bot written in Python using Gevent.
 
 Installation
 ------------
-Grab the source. For now I recommend using pip to install to a virtualenv. The 
-requirements.txt should get you set up. Note that you can exclude modules like
-python-bitly-api if you don't want or need URL shortening.
+Grab the source:
+
+`$ git clone git://github.com/maxcountryman/kaa.git`
+
+For now I recommend using pip to install to a virtualenv. The requirements.txt 
+should get you set up. Note that you can exclude modules like bitly-api-python 
+if you don't want or need URL shortening.
 
 Writing a Plugin
 ----------------
@@ -16,9 +20,9 @@ Plugins are easy to write. Begin by importing the Plugin super class:
 
 For convenience, `Plugin` provides a decorator for commands, 
 `@Plugin.command()`. This should be used to assign a command to a function. It 
-will automatically return a tuple to your function. The first element of the 
-tuple will be the command and the second will either be the command, if there 
-are no args after the command, or the args that follow the command.
+will return a tuple to your function. The first element of the tuple will be 
+the command and the second will either be the command, if there are no args 
+after the command, or the args that follow the command.
 
     class MyPlugin(Plugin):
         '''usage: ^my_command [args]'''
@@ -36,8 +40,9 @@ Because the super class provides several shortcuts, such as `reply()`, it's
 often recommended to use `super()` to make sure these are available in your
 plugin class. Check out bot.py for a look at what's available.
 
-In order to use the plugin you will need to add it to the list of configured
-plugins to load. Typically something like this should work, saved as config.py:
+In order to use the plugin you will need to save it to voxbot/plugins and add 
+it to the list of configured plugins to load. Typically something like this 
+should work, saved as config.py:
 
     class Config(object):
         '''Settings for our bot.'''
