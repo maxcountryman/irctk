@@ -82,8 +82,10 @@ class Config(object):
 
 
 class Plugin(object):
-    '''This is a base class from which plugins may inherit. It provides some
-    normalized variables which aim to make writing plugins a sane endevour.'''
+    '''
+    This is a base class from which plugins may inherit. It provides some
+    normalized variables which aim to make writing plugins a sane endevour.
+    '''
     
     def __init__(self, bot):
         self.bot = bot
@@ -96,18 +98,27 @@ class Plugin(object):
         self.user = self.prefix.split('!')[0]
     
     def reply(self, msg, channel=None, action=False):
-        '''Directs a response to either a channel or user. If `channel`,
-        overrides the target.'''
+        '''
+        Directs a response to either a channel or user. If `channel`,
+        overrides the target, if `action`, wraps `msg` with ACTION escapes.
+        '''
+        
+        LINE_LIMIT = 255
+        msgs = [msg[i:i + LINE_LIMIT] for i in range(0, len(msg), LINE_LIMIT)]
         
         if action:
             msg =  chr(1) + 'ACTION ' + msg + chr(1)
         if channel:
-            return self.bot.msg(channel, msg)
+            for msg in msgs:
+                self.bot.msg(channel, msg)
+            return
         if not self.sender == self.bot.nick:
-            self.bot.msg(self.sender, msg)
+            for msg in msgs:
+                self.bot.msg(self.sender, msg)
         else:
-            self.bot.reply(self.user, msg)
-    
+            for msg in msgs:
+                self.bot.reply(self.user, msg)
+        
     @staticmethod
     def command(command, is_in=False):
         def _decorator(func):
