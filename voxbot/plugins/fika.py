@@ -14,15 +14,9 @@ class Fika(Plugin):
     def _send_response(self, *args):
 		url = 'http://isitfika.net/index.php'
 		result = urllib.urlopen(url)
-		lines = result.read().split("\n")
-		found = False
-		for l in lines:
-			if re.search("Nej", l) != None:
-				found = True
-
-		if found:
-			self.bot.msg(self.sender, "It's not fika :(")
-			print "Not fika :("
+		lines = result.read()
+		if re.search("Nej", lines) == None:
+			self.bot.msg(self.sender, "It is fika")
 		else:
-			self.bot.msg(self.sender, "It is fika!")
-			print "Fika!"
+			time = re.search("T\-([0-9]+)", lines).group(1)
+			self.bot.msg(self.sender, "It's not fika :( Still {0} minutes to go.".format(time))
