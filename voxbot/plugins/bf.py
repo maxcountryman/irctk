@@ -12,8 +12,8 @@ class Bf(Plugin):
         self._send_response()
     
     @Plugin.command('^bf')
-    def _send_response(self, *args):
-            bf = args[-1]
+    def _send_response(self, *args, **kwargs):
+            bf = kwargs.get('args', '')
             bf = self._parse(bf)
             if bf:
                 self.reply(bf)

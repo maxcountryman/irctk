@@ -10,9 +10,9 @@ class Raw(Plugin):
         self._send_raw()
     
     @Plugin.command('^raw')
-    def _send_raw(self, *args):
+    def _send_raw(self, *args, **kwargs):
         if not self.user in self.owners:
             return self.reply('You do not have proper privileges')
         else: 
-            s = args[-1] 
+            s = kwargs.get('args', '') 
             self.bot._send(s)

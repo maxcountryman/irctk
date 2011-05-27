@@ -5,7 +5,7 @@ import urllib
 import json
 import socket
 
-socket.setdefaulttimeout(5)
+socket.setdefaulttimeout(15)
 
 class Imdb(Plugin):
     '''usage: ^imbd [search terms]'''
@@ -15,8 +15,8 @@ class Imdb(Plugin):
         self._send_response()
     
     @Plugin.command('^imdb')
-    def _send_response(self, *args):
-            query = args[-1] 
+    def _send_response(self, cmd=None, args=None):
+            query = args 
             query = urllib.quote(query)
             url = 'http://www.imdbapi.com/?t={0}'.format(query)
             result = json.load(urllib.urlopen(url))

@@ -1,8 +1,8 @@
 '''A plugin for Google's search API. Returns the first result, i.e. 
-"Feeling Luckying?"'''
+"Feeling Lucky?"'''
 
 from voxbot.bot import Plugin
-from voxbot.utils import bitly
+from voxbot.utils import bitly, unescape
 
 import urllib
 import urlparse
@@ -19,8 +19,8 @@ class Google(Plugin):
         self._search()
     
     @Plugin.command('^google')
-    def _search(self, *args):
-        query = args[-1]
+    def _search(self, cmd=None, args=None):
+        query = args
         
         url = urlparse.urlunsplit(
                 (
@@ -42,6 +42,6 @@ class Google(Plugin):
         else:
             url = urllib.unquote(results[0]['url'])
             url = bitly.shorten(url)['url']
-            title = urlparse.unquote(results[0]['titleNoFormatting'])
+            title = unescape(results[0]['titleNoFormatting'])
             lucky = title + ' -- ' + url 
             self.reply(lucky) 

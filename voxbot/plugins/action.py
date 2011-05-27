@@ -8,11 +8,13 @@ class Action(Plugin):
         self._send_action()
     
     @Plugin.command('^me')
-    def _send_action(self, *args):
-        if args[0] == args[-1]:
+    def _send_action(self, *args, **kwargs):
+        args = kwargs.get('args', '')
+        
+        if not args:
             return
         
-        s = args[-1]
+        s = args 
         if s.startswith('#'):
             args = s[s.find('#'):].split(' ', 1)[-1]
             chan = s[s.find('#'):].split(' ', 1)[0]

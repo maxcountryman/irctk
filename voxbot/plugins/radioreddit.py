@@ -16,15 +16,15 @@ class RadioReddit(Plugin):
         self._info()
         
     @Plugin.command('^np')
-    def _np(self, *args):
+    def _np(self, cmd=None, args=None):
         
         genres = ['rock', 'electronic', 'hiphop']
-        if args[-1] in genres:
+        if args in genres:
             json_results = \
                 urllib.urlopen(
-                    'http://radioreddit.com/api/{0}/status.json'.format(args[-1])
+                    'http://radioreddit.com/api/{0}/status.json'.format(args)
                     )
-        elif args[0] == args[-1]:
+        elif not args:
             json_results = \
                 urllib.urlopen('http://radioreddit.com/api/status.json')
         results = json.loads(json_results.read())['songs']['song'][0]
@@ -37,63 +37,43 @@ class RadioReddit(Plugin):
             '(Redditor: {0})'.format(results['redditor']) \
             + ' ' + \
             bitly.shorten(url)['url']
-        if args[0] != args[-1]:
+        if args:
             now_playing = \
                     'Now playing on the {0} stream: '.format(args[-1]) + result
             self.reply(now_playing)
         else:
-            now_playing = 'Now playing on Redio Reddit: ' + result
+            now_playing = 'Now playing on Radio Reddit: ' + result
             self.reply(now_playing)
     
     @Plugin.command('^status')
-    def _status(self, *args):
+    def _status(self, cmd=None, args=None):
         
+        url = 'http://radioreddit.com/api/'
         genres = ['rock', 'electronic', 'hiphop']
-        if args[-1] == 'main':
-            json_results = \
-                urllib.urlopen(
-                    'http://radioreddit.com/api/status.json'
-                    )
-            result = json.loads(json_results.read())['listeners']
-            listeners = 'There are {0} listeners currently'.format(result)
-            self.reply(listeners)
-        elif args[-1] in genres:
-            json_results = \
-                urllib.urlopen(
-                    'http://radioreddit.com/api/{0}/status.json'.format(args[-1])
-                    )
-            result = json.loads(json_results.read())['listeners']
-            listeners = 'There are {0} listeners currently'.format(result)
-            self.reply(listeners)
-        else: 
-            main_results = \
-                    urllib.urlopen(
-                            'http://radioreddit.com/api/status.json'
-                            )
-            rock_results = \
-                    urllib.urlopen(
-                            'http://radioreddit.com/api/rock/status.json'
-                            )
-            electronic_results = \
-                    urllib.urlopen(
-                            'http://radioreddit.com/api/electronic/status.json'
-                            )
-            hiphop_results = \
-                    urllib.urlopen(
-                            'http://radioreddit.com/api/hiphop/status.json'
-                            )
-            main = int(json.loads(main_results.read())['listeners'])
-            rock = int(json.loads(rock_results.read())['listeners'])
-            electronic = int(json.loads(electronic_results.read())['listeners'])
-            hiphop = int(json.loads(hiphop_results.read())['listeners'])
-            result = main + rock + electronic + hiphop
-            listeners = 'There are {0} listeners currently'.format(result)
-            self.reply(listeners)
+        
+        if not args:
+            urls = [url + '{0}/status.json'.format(genre) for genre in genres]
+            urls.append(url + 'status.json')
+            i = 0
+            for url in urls:
+                i += int(json.loads(urllib.urlopen(url).read())['listeners'])
+            listeners = 'There are {0} listeners currently'.format(i)
+            return self.reply(listeners)
+        elif args == 'main':
+            status = urllib.urlopen(url + 'status.json')
+        elif args in genres:
+            status = \
+                urllib.urlopen(url + '{0}/status.json'.format(args))
+        status = json.loads(status.read())['listeners']
+        listeners = 'There are {0} listeners currently'.format(status)
+        self.reply(listeners)
             
     @Plugin.command('^info')
     def _info(self, *args):
         info = 'Radio Reddit information: ' + \
                 'http://radioreddit.com/about ' + \
-                'http://radioreddit.com/faq'
+                'http://radioreddit.com/faq ' + \
+                'http://radioreddit.com/uploading ' + \
+                'http://radioreddit.com/content/stream-schedules'
         self.reply(info)
 

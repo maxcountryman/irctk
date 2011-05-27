@@ -15,9 +15,13 @@ class Youtube(Plugin):
         super(Youtube, self).__init__(bot)
         self._search()
     
+    
     @Plugin.command('^youtube')
-    def _search(self, *args):
-        query = args[-1]
+    def _search(self, cmd, args):
+        query = args
+        
+        if not args:
+            return
         
         url = urlparse.urlunsplit(
                 (
@@ -38,6 +42,6 @@ class Youtube(Plugin):
             url = 'http://www.youtube.com/watch?v={0}'.format(results['id'])
             url = bitly.shorten(url)['url']
             title = results['title']
-            desc = results['description']
+            desc = results['description'][:156]
             lucky = title + ' -- ' + desc + ' -- ' + url
             self.reply(lucky)

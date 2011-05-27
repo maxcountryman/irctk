@@ -25,7 +25,15 @@ class Config(object):
         'Action',
         'Ctcp',
         'HighFive',
-        'Beer'
+        'Drinks',
+        'Youtube',
+        'Dict',
+        'Weather',
+        'Fika',
+        'Nooooo',
+        'Poetry',
+        'FuckYeah',
+        'Yeah'
         ],
     'owners': ['doraemon']
     }
