@@ -33,7 +33,8 @@ class Config(object):
         'Nooooo',
         'Poetry',
         'FuckYeah',
-        'Yeah'
+        'Yeah',
+        'Uno'
         ],
     'owners': ['doraemon']
     }

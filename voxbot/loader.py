@@ -1,5 +1,3 @@
-'''Hacky plugin loader.'''
-
 import imp
 import sys
 import os
