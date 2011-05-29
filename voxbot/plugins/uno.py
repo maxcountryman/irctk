@@ -20,7 +20,7 @@ class Uno(Plugin):
     
     @Plugin.command('^uno')
     def _start_game(self, cmd, args, MIN=2, MAX=10):
-        if 'game_started' not in self.data or not self.data['game_started']:
+        if not self.data.get('game_started', '') or not self.data['game_started']:
             try:
                 if not args:
                     raise ValueError
@@ -40,7 +40,7 @@ class Uno(Plugin):
 
     @Plugin.command('^stopuno')
     def _stop_game(self, cmd, args):
-        if self.data['game_started']:
+        if self.data.get('game_started', ''):
             self.data['game_started'] = False
             self.reply("Uno game stopped")
         else:
@@ -48,13 +48,18 @@ class Uno(Plugin):
 
     @Plugin.command('^join')
     def _player_join(self, cmd, args):
-        if self.data['game_started']:
+        if self.data.get('game_started', ''):
+            PLUS_ONE = len(self.data['players']) + 1 
+            
             if self.user in self.data['players']:
                 self.reply("{0}: You are already in the game!".format(self.user))
-            elif self.data['in_progress']:
+            elif self.data.get('in_progress', ''):
                 self.reply("Sorry {0}, the game has already begun.".format(self.user))
-            else:
+            elif self.data.get('num_players', '') >= PLUS_ONE:
+                self.data['players'] = self.data['players'] + [self.user]
                 self.reply("{0} joined the game. ({1}/{2} players)".format(self.user, len(self.data['players']), self.data['num_players']))
+            else:
+                self.reply('There are already enough players for this game!')
         else:
             self.reply("{0}: There is no game going on".format(self.user))
 
