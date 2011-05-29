@@ -23,10 +23,10 @@ class Uno(Plugin):
         if 'game_started' not in self.data or not self.data['game_started']:
             try:
                 if not args:
-                    pass
+                    raise ValueError
                 else:
                     players = int(args)
-                    if players < MIN or players > MAX:
+                if players < MIN or players > MAX:
                         raise ValueError
             except ValueError:
                 self.reply("Please specify the number of players (2-10)")
