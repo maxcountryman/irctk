@@ -32,9 +32,9 @@ after the command, or the args that follow the command.
             self.my_command()
             
         @Plugin.command('^my_command')
-        def my_command(self, *args):
-            if args[0] != args[-1]:
-                self.reply(str(args[-1]))
+        def my_command(self, cmd, args):
+            if args:
+                self.reply(str(args))
 
 Because the super class provides several shortcuts, such as `reply()`, it's 
 often recommended to use `super()` to make sure these are available in your

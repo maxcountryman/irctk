@@ -18,7 +18,7 @@ class RadioReddit(Plugin):
     @Plugin.command('^np')
     def _np(self, cmd=None, args=None):
         
-        genres = ['rock', 'electronic', 'hiphop']
+        genres = ['rock', 'electronic', 'hiphop', 'random']
         if args in genres:
             json_results = \
                 urllib.urlopen(
@@ -49,7 +49,7 @@ class RadioReddit(Plugin):
     def _status(self, cmd=None, args=None):
         
         url = 'http://radioreddit.com/api/'
-        genres = ['rock', 'electronic', 'hiphop']
+        genres = ['rock', 'electronic', 'hiphop', 'random']
         
         if not args:
             urls = [url + '{0}/status.json'.format(genre) for genre in genres]

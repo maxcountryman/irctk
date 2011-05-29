@@ -13,25 +13,25 @@ class Drinks(Plugin):
         self._ten_tacos()
     
     @Plugin.command('^ganja')
-    def _ten_tacos(self, *args):
+    def _ten_tacos(self, cmd, args):
         self.reply('hands {0} a joint'.format(self.user), action=True)
     
     @Plugin.command('^lsd')
-    def _candy_land(self, *args):
+    def _candy_land(self, cmd, args):
         self.reply('hands {0} some blotter'.format(self.user), action=True)
     
     @Plugin.command('^beer')
-    def _a_cold_one(self, *args):
+    def _a_cold_one(self, cmd, args):
         self.reply('hands {0} a cold one'.format(self.user), action=True)
     
     @Plugin.command('^wine')
-    def _fine_vines(self, *args):
+    def _fine_vines(self, cmd, args):
         self.reply('hands {0} a glass'.format(self.user), action=True)
     
     @Plugin.command('^scotch')
-    def _gentlemens_drink(self, *args):
+    def _gentlemens_drink(self, cmd, args):
         self.reply('hands {0} a scotch on the rocks'.format(self.user), action=True)
     
     @Plugin.command('^water')
-    def _spiked_aqua(self, *args):
+    def _spiked_aqua(self, cmd, args):
         self.reply('hands {0} an electric water'.format(self.user), action=True)

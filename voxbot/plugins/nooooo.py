@@ -8,5 +8,5 @@ class Nooooo(Plugin):
         self._debug()
     
     @Plugin.command('^no')
-    def _debug(self, *args):
+    def _debug(self, cmd, args):
         self.reply('http://bit.ly/k5wwyS')

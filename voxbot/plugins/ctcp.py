@@ -18,8 +18,8 @@ class Ctcp(Plugin):
         self._ctcp_cake()
     
     @Plugin.command('^query')
-    def _query(self, *args, **kwargs):
-        target = kwargs.get('args', '').split(' ', 1)[0]
+    def _query(self, cmd, args):
+        target = args.split(' ', 1)[0]
         self.bot.ctcp_send(target, 'PING')
     
     def _ctcp_ping(self):
@@ -56,5 +56,3 @@ class Ctcp(Plugin):
         args = self.msgs
         if args.startswith(chr(1)) and 'CAKE' in args:
             self.bot.ctcp_reply(self.user, 'LIE')
-
-
