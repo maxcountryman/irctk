@@ -11,6 +11,7 @@ class RadioReddit(Plugin):
     
     def __init__(self, bot):
         super(RadioReddit, self).__init__(bot)
+        self.genres = ['rock', 'electronic', 'hiphop', 'random', 'talk']
         self._np()
         self._status()
         self._info()
@@ -18,8 +19,7 @@ class RadioReddit(Plugin):
     @Plugin.command('^np')
     def _np(self, cmd=None, args=None):
         
-        genres = ['rock', 'electronic', 'hiphop', 'random']
-        if args in genres:
+        if args in self.genres:
             json_results = \
                 urllib.urlopen(
                     'http://radioreddit.com/api/{0}/status.json'.format(args)
@@ -49,10 +49,9 @@ class RadioReddit(Plugin):
     def _status(self, cmd=None, args=None):
         
         url = 'http://radioreddit.com/api/'
-        genres = ['rock', 'electronic', 'hiphop', 'random']
         
         if not args:
-            urls = [url + '{0}/status.json'.format(genre) for genre in genres]
+            urls = [url + '{0}/status.json'.format(genre) for genre in self.genres]
             urls.append(url + 'status.json')
             i = 0
             for url in urls:
@@ -61,7 +60,7 @@ class RadioReddit(Plugin):
             return self.reply(listeners)
         elif args == 'main':
             status = urllib.urlopen(url + 'status.json')
-        elif args in genres:
+        elif args in self.genres:
             status = \
                 urllib.urlopen(url + '{0}/status.json'.format(args))
         status = json.loads(status.read())['listeners']
