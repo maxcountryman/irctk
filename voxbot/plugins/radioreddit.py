@@ -11,7 +11,7 @@ class RadioReddit(Plugin):
     
     def __init__(self, bot):
         super(RadioReddit, self).__init__(bot)
-        self.genres = ['rock', 'electronic', 'hiphop', 'random', 'talk']
+        self.genres = ['rock', 'electronic', 'hiphop', 'random', 'talk', 'indie']
         self._np()
         self._status()
         self._info()
