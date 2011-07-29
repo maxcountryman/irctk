@@ -48,6 +48,7 @@ def clean():
     '''
     pass over the messages queue and remove expired messages
     '''
+    global bytes
     global messages
     n = now()
     _messages = []
