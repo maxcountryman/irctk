@@ -86,4 +86,4 @@ def wait(b, msg):
     if waiting_queue_max and waiting_size + b > waiting_queue_max:
         return
     waiting_size += b
-    waiting.append(msg)
+    waiting.append((b, msg))
