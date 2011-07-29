@@ -18,7 +18,7 @@ messages = []   # for messages sent
 
 # returns size in bytes? i dont know
 def sizeof(txt):
-    return sys.getsizeof(txt)
+    return sys.getsizeof(txt) - 24
 
 # call in 'send' method used by bot to transmit output to irc
 def send(msg):
