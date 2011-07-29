@@ -9,4 +9,4 @@ t_limit = 60000 # in ms
 b_limit = 8192  # bytes
 
 ''' Maximum size (in bytes) of the waiting queue '''
-waiting_queue_max = 0 # any false value == no limit
+waiting_queue_max = 3 # any false value == no limit
