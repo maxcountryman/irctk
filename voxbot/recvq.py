@@ -23,7 +23,7 @@ def sizeof(txt):
 # call in 'send' method used by bot to transmit output to irc
 def send(msg):
     
-    b = sizeof(msg.text)
+    b = sizeof(msg)
     if not ok2go(b):
         wait(b, msg)
         return False
