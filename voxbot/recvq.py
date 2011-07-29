@@ -81,6 +81,7 @@ def clear_waiting():
     return good
 
 def wait(b, msg):
+    global waiting_size
     waiting_queue_max = conf.waiting_queue_max
     if waiting_queue_max and waiting_size + b > waiting_queue_max:
         return
