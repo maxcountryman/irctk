@@ -67,6 +67,7 @@ waiting = []
 waiting_size = 0
 def clear_waiting():
     global waiting
+    global waiting_size
     i = 0
     good = []
     for b, m in waiting:
