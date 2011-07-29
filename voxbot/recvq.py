@@ -32,6 +32,7 @@ def send(msg):
     return True
 
 def log_message(b):
+    global messages
     t = now()
     bytes += b
     messages.append((t, b))
@@ -46,6 +47,7 @@ def clean():
     '''
     pass over the messages queue and remove expired messages
     '''
+    global messages
     n = now()
     _messages = []
     for t, b in messages:
@@ -62,6 +64,7 @@ Call from a loop
 waiting = []
 waiting_size = 0
 def clear_waiting():
+    global waiting
     i = 0
     good = []
     for b, m in waiting:
