@@ -33,6 +33,7 @@ def send(msg):
 
 def log_message(b):
     global messages
+    global bytes
     t = now()
     bytes += b
     messages.append((t, b))
