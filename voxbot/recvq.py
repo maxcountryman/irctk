@@ -52,7 +52,7 @@ def clean():
     n = now()
     _messages = []
     for t, b in messages:
-        if now - t > conf.t_limit:
+        if n - t > conf.t_limit:
             bytes -= b
         else:
             _messages.append((t,b))
