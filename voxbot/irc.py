@@ -4,6 +4,8 @@ import logging
 from gevent import socket, queue
 from gevent.ssl import wrap_socket
 
+import recvq
+
 logger = logging.getLogger('irc')
 logger.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
@@ -142,6 +144,10 @@ class Irc(object):
                 self.cmd('PONG', args)
             if command == '001':
                 self._join_chans(self.channels)
+
+            ready = recvq.clear_waiting()
+            for msg in ready:
+                self._send(msg)
     
     def _set_nick(self, nick):
         self.cmd('NICK', nick)
@@ -178,8 +184,9 @@ class Irc(object):
             self._send(command + ' ' + ''.join(args))
             
     def _send(self, s):
-        logger.info(s)
-        self.conn.oqueue.put(s)
+        if recvq.send(s):
+            logger.info(s)
+            self.conn.oqueue.put(s)
 
 
 if __name__ == '__main__':
@@ -190,7 +197,8 @@ if __name__ == '__main__':
         'realname': 'Kaa the Python', 
         'port': 6697, 
         'ssl': True, 
-        'channels': ['#voxinfinitus', '#radioreddit', '#techsupport'], 
+        'channels': ['#voxinfinitus', '#radioreddit', '#techsupport'],
+        'sexy'  :   True,
         }
     
     bot = lambda : Irc(SETTINGS)
