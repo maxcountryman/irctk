@@ -36,5 +36,5 @@ class Config(object):
         'Yeah',
         'Uno'
         ],
-    'owners': ['doraemon']
+    'owners': ['doreamon']
     }
