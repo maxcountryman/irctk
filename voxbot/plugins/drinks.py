@@ -13,7 +13,7 @@ class Drinks(Plugin):
         self._ten_tacos()
         self._join()
  
-   @Plugin.command('^join')
+    @Plugin.command('^join')
     def _join(self, cmd, args):
         self.reply('lolwut')
    
