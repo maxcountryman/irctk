@@ -9,8 +9,4 @@ class Beer(Plugin):
     
     @Plugin.command('^beer')
     def _a_cold_one(self, cmd=None, args=None):
-        print args
-        if args:
-            self.reply('hands {0} a cold one'.format(args), action=True)
-        else:
-            self.reply('hands {0} a cold one'.format(self.user), action=True)
+        pass
