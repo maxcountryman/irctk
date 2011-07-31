@@ -11,11 +11,6 @@ class Drinks(Plugin):
         self._spiked_aqua()
         self._candy_land()
         self._ten_tacos()
-        self._join()
- 
-    @Plugin.command('^join')
-    def _join(self, cmd, args):
-        self.reply('lolwut')
    
     @Plugin.command('^ganja')
     def _ten_tacos(self, cmd, args):
@@ -27,10 +22,7 @@ class Drinks(Plugin):
     
     @Plugin.command('^beer')
     def _a_cold_one(self, cmd, args):
-        if args:
-            self.reply('hands {0} a cold one'.format(args), action=True)
-        else:
-            self.reply('hands {0} a cold one'.format(self.user), action=True)
+        self.reply('hands {0} a cold one'.format(self.user), action=True)
     
     @Plugin.command('^wine')
     def _fine_vines(self, cmd, args):
