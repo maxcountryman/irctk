@@ -11,7 +11,12 @@ class Drinks(Plugin):
         self._spiked_aqua()
         self._candy_land()
         self._ten_tacos()
-    
+        self._join()
+ 
+   @Plugin.command('^join')
+    def _join(self, cmd, args):
+        self.reply('lolwut')
+   
     @Plugin.command('^ganja')
     def _ten_tacos(self, cmd, args):
         self.reply('hands {0} a joint'.format(self.user), action=True)
