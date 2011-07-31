@@ -22,7 +22,10 @@ class Drinks(Plugin):
     
     @Plugin.command('^beer')
     def _a_cold_one(self, cmd, args):
-        self.reply('hands {0} a cold one'.format(self.user), action=True)
+        if args:
+            self.reply('hands {0} a cold one'.format(args), action=True)
+        else:
+            self.reply('hands {0} a cold one'.format(self.user), action=True)
     
     @Plugin.command('^wine')
     def _fine_vines(self, cmd, args):
