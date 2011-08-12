@@ -1,15 +1,15 @@
-==Kaa
+##Kaa
 
 Kaa is a simple IRC framework for developing IRC-based applications.
 Essentially it wraps a loosely coupled, modified TCP client and IRC wrapper.
 
-==Installtion
+##Installtion
 
 Simply download and install via pip: `sudo pip install kaa`
 
 Or you may clone the repo and install with setuptools: `python setup.py install`
 
-==Writing Your First App
+##Writing Your First App
 
 Begin by import the framework bot object, called Kaa(). Assign this object to
 a local variable, e.g. `bot`.
