@@ -1,59 +1,48 @@
-About
-=====
-Kaa is a simple, modular IRC bot written in Python using Gevent.
+==Kaa
 
-Installation
-------------
-Grab the source:
+Kaa is a simple IRC framework for developing IRC-based applications.
+Essentially it wraps a loosely coupled, modified TCP client and IRC wrapper.
 
-    $ git clone git://github.com/maxcountryman/kaa.git
+==Installtion
 
-For now I recommend using pip to install to a virtualenv. The requirements.txt 
-should get you set up. Note that you can exclude modules like bitly-api-python 
-if you don't want or need URL shortening.
+Simply download and install via pip: `sudo pip install kaa`
 
-Writing a Plugin
-----------------
-Plugins are easy to write. Begin by importing the Plugin super class:
+Or you may clone the repo and install with setuptools: `python setup.py install`
 
-    from voxbot.bot import Plugin
+==Writing Your First App
 
-For convenience, `Plugin` provides a decorator for commands, 
-`@Plugin.command()`. This should be used to assign a command to a function. It 
-will return a tuple to your function. The first element of the tuple will be 
-the command and the second will either be the command, if there are no args 
-after the command, or the args that follow the command.
+Begin by import the framework bot object, called Kaa(). Assign this object to
+a local variable, e.g. `bot`.
+    
+    from kaa import Kaa
+    bot = Kaa()
 
-    class MyPlugin(Plugin):
-        '''usage: ^my_command [args]'''
-        
-        def __init__(self, bot)
-            super(MyPlugin, self).__init__(bot)
-            self.my_command()
-            
-        @Plugin.command('^my_command')
-        def my_command(self, cmd, args):
-            if args:
-                self.reply(str(args))
+You may set up configuration for your application via an external configuration 
+file, such as `settings.cfg`, for instance. Several parameters are expected in
+order to set up the connection. For instance your `settings.cfg` might look
+something like this:
+    
+    SERVER = 'irc.voxinfinitus.net'
+    PORT = 6667
+    SSL = False
+    TIMEOUT = 300
+    NICK = 'hax0r'
+    REALNAME = 'A Python Bot'
+    CHANNELS = ['#voxinfinitus']
+    
+Then you can load this file into your app with the following:
+    
+    bot.config.from_pyfile('settings.cfg')
 
-Because the super class provides several shortcuts, such as `reply()`, it's 
-often recommended to use `super()` to make sure these are available in your
-plugin class. Check out bot.py for a look at what's available.
+Plugins are realized in a slightly different way than some other IRC bots.
+Although they are still loaded into the execution loop, there is no respository
+of plugins. Instead you can hook in any function you like to the execution loop
+by using a decorator:
+    
+    @bot.command('test')
+    def test(*args):
+        bot.irc.send_reply('Testing... 1, 2, 3!')
 
-In order to use the plugin you will need to save it to voxbot/plugins and add 
-it to the list of configured plugins to load. Typically something like this 
-should work, saved as config.py:
+These commands may live anywhere you like. So if you prefer to split them out
+into a separate file, that's no problem.
 
-    class Config(object):
-        '''Settings for our bot.'''
-        
-        SETTINGS = {
-            'server': 'irc.voxinfinitus.net', 
-            'nick': 'Kaa', 
-            'realname': 'Kaa the Python', 
-            'port': 6697, 
-            'ssl': True, 
-            'channels': ['#testing'],
-            'plugins': ['MyPlugin'],
-            'owners': ['foobar']
-        }
