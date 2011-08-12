@@ -2,7 +2,7 @@
 Kaa
 ---
 
-This is a minimalistic framework for building IRC applications.
+A simple framework for writing IRC applications.
 '''
 
 from setuptools import setup
