@@ -258,8 +258,9 @@ class IrcWrapper(object):
                     'prefix' : self.prefix, 
                     'command' : self.command, 
                     'args' : self.args,
-                    'sender': self.args[0] if self.args else '',
-                    'message': self.args[-1] if self.args else '',
+                    'sender': self.sender if self.args else '',
+                    'user': self.prefix.rsplit('!', 1)[0],
+                    'message': self.message if self.args else '',
                     'stale': False,
                     }
                 
@@ -352,7 +353,7 @@ class IrcWrapper(object):
         if self.context['sender'].startswith('#'):
             recipient = self.context['sender']
         else:
-            recipient = self.context['prefix'].split('!', 1)[0]
+            recipient = self.context['user']
         self.send_message(recipient, message, action)
     
     def send_notice(self, recipient, message):

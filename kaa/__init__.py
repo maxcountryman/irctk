@@ -22,7 +22,6 @@
     the moss grew. Art thou still alive, Manling?"
 '''
 
-__version__ = '0.1'
 
 from .bot import Kaa
 

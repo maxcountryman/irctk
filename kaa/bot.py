@@ -70,29 +70,46 @@ class Kaa(object):
             
             context_stale = self.irc.context.get('stale')
             args = self.irc.context.get('args')
-            while not context_stale and args and not self.connection.shutdown:
+            while not context_stale and args:
                 command = self.irc.context.get('command')
                 args = self.irc.context.get('args')
                 message = args[-1]
                 
                 if message.startswith(prefix):
                     for plugin in self.config['PLUGINS']:
+                        
+                        # help for plugins, i.e. doc strings
+                        _help = prefix + 'help'
+                        help_hook = message.split(' ', 1)[-1]
+                        if message.startswith(_help) and plugin.get(help_hook):
+                            hook = message.split(' ', 1)[-1]
+                            if plugin.get(hook):
+                                self.irc.send_reply(plugin['help'])
+                            else:
+                                self.irc.send_reply('plugin not found')
+                        
                         hook = plugin['hook']
                         hook = prefix + hook
                         #self.logger.debug('{0}'.format(str(plugin)))
                         
-                        if message.startswith(hook or hook + ' '):
+                        if message == (hook or hook + ' '):
                             _args = message.split(hook, 1)[-1].strip()
                             
                             # run the plugin in a thread?
                             if plugin.get('threaded'):
-                                thread.start_new_thread(plugin['func'], (_args,))
+                                if inspect.getargspec(plugin['func']).args:
+                                    thread.start_new_thread(plugin['func'], (_args,))
+                                else:
+                                    thread.start_new_thread(plugin['func'], ())
                             else:
                                 try:
-                                    plugin['func'](_args)
+                                    if inspect.getargspec(plugin['func']).args:
+                                        plugin['func'](_args)
+                                    else:
+                                        plugin['func']()
                                 except Exception, e:
                                     self.logger.error(str(e))
-                                    pass
+                                    continue
                 
                 if command and command.isupper():
                     for event in self.config['EVENTS']:
@@ -105,7 +122,7 @@ class Kaa(object):
                                 event['func'](_args)
                             except Exception, e:
                                 self.logger.error(str(e))
-                                pass
+                                continue
                 
                 # we're done here, context is stale, give us fresh fruit!
                 context_stale = self.irc.context['stale'] = True
@@ -130,11 +147,12 @@ class Kaa(object):
         def wrapper(f):
             plugin.setdefault('hook', f.func_name)
             plugin['func'] = f
+            plugin['help'] = f.__doc__ if f.__doc__ else 'no help provided'
             self._update_plugins(plugin)
             return f
         
         if kwargs or not inspect.isfunction(hook):
-            if hook is not None:
+            if hook:
                 plugin['hook'] = hook
             plugin.update(kwargs)
             return wrapper
@@ -197,20 +215,19 @@ class Kaa(object):
                 if old_time is None:
                     mtimes[filename] = mtime
                 elif mtime > old_time:
-                    self.logger.info('Reloading {0}'.format(filename))
+                    mtimes[filename] = mtime
+                    
+                    self.logger.info('Changes detected; reloading {0}'.format(filename))
+                    
                     f = filename.split('/')[-1].split('.')[0]
                     try:
                         imp.load_source(f, filename)
-                    except ValueError, e:
+                    except Exception, e:
                         self.logger.error('Failed loading plugin: ' + str(e))
                         continue
-                    
-                    # this isn't good because after enough changes the 
-                    # recursion ceiling will be hit
-                    #self._reloader(fnames)
-                    
-                    # this is better, set the new age of the file
-                    mtimes[filename] = mtime
+                    finally:
+                        mtimes[filename] = mtime
+                        
             time.sleep(wait)
     
     def run(self):
