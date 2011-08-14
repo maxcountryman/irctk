@@ -27,7 +27,7 @@ def google(query):
     '''Useage .g [query]'''
     
     if not query:
-        bot.irc.send_reply(google.__doc__)
+        return bot.irc.send_reply(google.__doc__)
     
     url = urlparse.urlunsplit(
             (
