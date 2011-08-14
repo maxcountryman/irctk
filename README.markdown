@@ -7,7 +7,7 @@ The framework is designed to be easy to use. Your application source is automati
 
 ##Installation
 
-*note* current there is a namespace conflict on PyPI and this package is not yet available through pip, instead download and install manually using the second method below.
+**NOTE** currently there is a namespace conflict on PyPI and this package is not yet available through pip, instead download and install manually using the second method below.
 
 Simply download and install via pip: `sudo pip install kaa`
 
@@ -57,4 +57,4 @@ Finally you will want to run your app. To do so simply:
 
 ## What To Do Next?
 
-There are a few other important aspects to the framework. For example, the context of the current line is available in a dictionary object; `bot.irc.context`. This dictionary allows you to do things like direct messages to a given sender or user, although keep in mind this functionality is built into the `send_reply` method of the IRC client wrapper.
+There are a few other important aspects to the framework. For example, the context of the current line is available in a dictionary object; `bot.irc.context`. This dictionary allows you to do things like direct messages to a given sender or user, although keep in mind this functionality is built into the `send_reply` method of the IRC client wrapper. However this allows for more advanced behavior as you will have full access to the variables parsed from the line your plugin was called on.
