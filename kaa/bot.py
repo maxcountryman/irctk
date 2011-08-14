@@ -92,7 +92,7 @@ class Kaa(object):
                         hook = prefix + hook
                         #self.logger.debug('{0}'.format(str(plugin)))
                         
-                        if message == (hook or hook + ' '):
+                        if message == hook or message.startswith(hook + ' '):
                             _args = message.split(hook, 1)[-1].strip()
                             
                             # run the plugin in a thread?
