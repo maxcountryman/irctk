@@ -3,7 +3,11 @@
 Kaa is a simple IRC framework for developing IRC-based applications.
 Essentially it wraps a loosely coupled, modified TCP client and IRC wrapper.
 
+The framework is designed to be easy to use. Your application source is automatically reloaded upon changes. Things like SSL are built into the wrapper.
+
 ##Installation
+
+*note* current there is a namespace conflict on PyPI and this package is not yet available through pip, instead download and install manually using the second method below.
 
 Simply download and install via pip: `sudo pip install kaa`
 
@@ -40,7 +44,7 @@ of plugins. Instead you can hook in any function you like to the execution loop
 by using a decorator:
     
     @bot.command('test')
-    def test(*args):
+    def test():
         bot.irc.send_reply('Testing... 1, 2, 3!')
 
 These commands may live anywhere you like. So if you prefer to split them out
@@ -51,3 +55,6 @@ Finally you will want to run your app. To do so simply:
     if __name__ == '__main__':
         bot.run()
 
+## What To Do Next?
+
+There are a few other important aspects to the framework. For example, the context of the current line is available in a dictionary object; `bot.irc.context`. This dictionary allows you to do things like direct messages to a given sender or user, although keep in mind this functionality is built into the `send_reply` method of the IRC client wrapper.
