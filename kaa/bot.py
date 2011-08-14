@@ -63,18 +63,14 @@ class Kaa(object):
         return self.config['EVENTS'].append(event)
     
     def _dispatch_plugin(self, plugin, hook, context):
-        if not context == hook or context.startswith(hook + ' '):
-            return
-        
-        params = context.split(hook, 1)[-1].strip() 
-        takes_args = inspect.getargspec(plugin['func']).args
-        if plugin.get('threaded'):
-            if takes_args:
+        if context == hook or context.startswith(hook + ' '):
+            params = context.split(hook, 1)[-1].strip() 
+            takes_args = inspect.getargspec(plugin['func']).args
+            if plugin.get('threaded') and takes_args:
                 thread.start_new_thread(plugin['func'], (params,))
-            else:
+            elif plugin.get('threaded'):
                 thread.start_new_thread(plugin['func'], ())
-        else:
-            if takes_args:
+            elif takes_args:
                 plugin['func'](params)
             else:
                 plugin['func']
@@ -90,21 +86,20 @@ class Kaa(object):
             
             context_stale = self.irc.context.get('stale')
             args = self.irc.context.get('args')
+            
             while not context_stale and args:
                 command = self.irc.context.get('command')
                 args = self.irc.context.get('args')
-                message = args[-1]
+                message = self.irc.context.get('message')
                 
                 if message.startswith(prefix):
                     for plugin in self.config['PLUGINS']:
-                        hook = plugin['hook']
-                        hook = prefix + hook
+                        hook = prefix + plugin['hook']
                         try:
                             self._dispatch_plugin(plugin, hook, message)
                         except Exception, e:
                             self.logger.error(str(e))
                             continue
-                
                 if command and command.isupper():
                     for event in self.config['EVENTS']:
                         hook = event['hook']
