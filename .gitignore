@@ -1,6 +1,7 @@
 .*
 *.pyc
 *.egg*
+*log
 bin/*
 build/*
 include/*
