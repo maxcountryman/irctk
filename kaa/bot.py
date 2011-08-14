@@ -58,7 +58,7 @@ class Kaa(object):
         a list.
         '''
         
-        if not self.config.get('PLUGINS'):
+        if not self.config.get('EVENTS'):
             self.config['EVENTS'] = []
         return self.config['EVENTS'].append(event)
     
@@ -113,6 +113,7 @@ class Kaa(object):
                 
                 if command and command.isupper():
                     for event in self.config['EVENTS']:
+                        print event
                         hook = event['hook']
                         
                         if command == hook:
@@ -172,7 +173,7 @@ class Kaa(object):
         
         def wrapper(f):
             plugin['func'] = f
-            self._update_events(kwargs)
+            self._update_events(plugin)
             return f
         
         plugin['hook'] = hook
