@@ -113,7 +113,6 @@ class Kaa(object):
                 
                 if command and command.isupper():
                     for event in self.config['EVENTS']:
-                        print event
                         hook = event['hook']
                         
                         if command == hook:
