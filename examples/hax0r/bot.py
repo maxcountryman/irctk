@@ -24,7 +24,7 @@ def raw(args):
 
 @bot.command('g', threaded=True)
 def google(query):
-    '''Usege .g [query]'''
+    '''Usage .g [query]'''
     
     if not query:
         return bot.irc.send_reply(google.__doc__)
