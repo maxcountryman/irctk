@@ -13,7 +13,7 @@ import thread
 import imp
 
 from .config import Config
-from .ircclient import TcpClient, IrcWrapper
+from .ircclient import TcpClient, IrcWrapper, IrcTestClient
 
 
 class Kaa(object):
@@ -62,8 +62,28 @@ class Kaa(object):
             self.config['EVENTS'] = []
         return self.config['EVENTS'].append(event)
     
+    def _dispatch_plugin(self, plugin, hook, context):
+        if not context == hook or context.startswith(hook + ' '):
+            return
+        
+        params = context.split(hook, 1)[-1].strip() 
+        takes_args = inspect.getargspec(plugin['func']).args
+        if plugin.get('threaded'):
+            if takes_args:
+                thread.start_new_thread(plugin['func'], (params,))
+            else:
+                thread.start_new_thread(plugin['func'], ())
+        else:
+            if takes_args:
+                plugin['func'](params)
+            else:
+                plugin['func']
+    
     def _parse_input(self, prefix='.'):
-        '''TODO'''
+        '''This internal method handles the parsing of commands and events.
+        Hooks for commands are prefixed with a character, by default `.`. This 
+        may be overriden by specifying `prefix`.
+        '''
         
         while True:
             time.sleep(0.01)
@@ -77,52 +97,22 @@ class Kaa(object):
                 
                 if message.startswith(prefix):
                     for plugin in self.config['PLUGINS']:
-                        
-                        # help for plugins, i.e. doc strings
-                        _help = prefix + 'help'
-                        help_hook = message.split(' ', 1)[-1]
-                        if message.startswith(_help) and plugin.get(help_hook):
-                            hook = message.split(' ', 1)[-1]
-                            if plugin.get(hook):
-                                self.irc.send_reply(plugin['help'])
-                            else:
-                                self.irc.send_reply('plugin not found')
-                        
                         hook = plugin['hook']
                         hook = prefix + hook
-                        #self.logger.debug('{0}'.format(str(plugin)))
-                        
-                        if message == hook or message.startswith(hook + ' '):
-                            _args = message.split(hook, 1)[-1].strip()
-                            
-                            # run the plugin in a thread?
-                            if plugin.get('threaded'):
-                                if inspect.getargspec(plugin['func']).args:
-                                    thread.start_new_thread(plugin['func'], (_args,))
-                                else:
-                                    thread.start_new_thread(plugin['func'], ())
-                            else:
-                                try:
-                                    if inspect.getargspec(plugin['func']).args:
-                                        plugin['func'](_args)
-                                    else:
-                                        plugin['func']()
-                                except Exception, e:
-                                    self.logger.error(str(e))
-                                    continue
+                        try:
+                            self._dispatch_plugin(plugin, hook, message)
+                        except Exception, e:
+                            self.logger.error(str(e))
+                            continue
                 
                 if command and command.isupper():
                     for event in self.config['EVENTS']:
                         hook = event['hook']
-                        
-                        if command == hook:
-                            _args = message.split(hook, 1)[-1].strip()
-                            try:
-                                self.logger.info(event)
-                                event['func'](_args)
-                            except Exception, e:
-                                self.logger.error(str(e))
-                                continue
+                        try:
+                            self._dispatch_plugin(event, hook, command)
+                        except Exception, e:
+                            self.logger.error(str(e))
+                            continue
                 
                 # we're done here, context is stale, give us fresh fruit!
                 context_stale = self.irc.context['stale'] = True
@@ -230,7 +220,7 @@ class Kaa(object):
                         
             time.sleep(wait)
     
-    def run(self):
+    def run(self, wait=0.01):
         
         self.connection = TcpClient(
                 self.config['SERVER'], 
@@ -255,5 +245,25 @@ class Kaa(object):
         thread.start_new_thread(self._reloader_loop, ())
         
         while True:
+            time.sleep(wait)
+
+
+class TestBot(Kaa):
+    shutdown = False
+    
+    def __init__(self):
+        self.config = Config(self.root_path, self.default_config)
+        self.irc = IrcTestClient(
+                self.config['NICK'], 
+                self.config['REALNAME'], 
+                self.config['CHANNELS']
+                )
+        self.connection = self.irc.connection
+    
+    def run(self):
+        
+        thread.start_new_thread(self._parse_input, ())
+        
+        while not self.shutdown:
             time.sleep(0.01)
 

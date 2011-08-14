@@ -227,6 +227,7 @@ class IrcWrapper(object):
             while '\r\n' in self.out_buffer and not self.connection.shutdown:
                 line, self.out_buffer = self.out_buffer.split('\r\n', 1)
                 self.connection.out.put(line)
+    
     def _recv(self, wait=0.01):
         '''This internal method pulls data from the connection's input queue.
         It then places this information in a local input buffer and loops over 
@@ -373,4 +374,74 @@ class IrcWrapper(object):
         self.send_command('QUIT', ':' + message)
         self.connection.close()
         time.sleep(1)
+
+
+class IrcTestClient(IrcWrapper):
+    
+    def __init__(self, nick, realname, channels):
+        self.connection = Queue.Queue()
+        self.connection.out = Queue.Queue()
+        self.connection.inp = Queue.Queue()
+        self.nick = nick
+        self.realname = realname
+        self.user = 'USER ' + nick + ' 3 * ' + realname
+        self.channels = channels
+        self.inp_buffer = ''
+        self.out_buffer = ''
+        
+        # convenience
+        self.line = ''
+        self.prefix = ''
+        self.command = ''
+        self.args = ''
+        
+        self.sender = self.args[0] if self.args else ''
+        self.message = self.args[-1] if self.args else ''
+        
+        self.context = {}
+        
+    def _send(self, wait=0.01):
+        
+        while True:
+            try:
+                time.sleep(wait)
+                while '\r\n' in self.out_buffer:
+                    line, self.out_buffer = self.out_buffer.split('\r\n', 1)
+                    self.connection.out.put(line)
+            except Exception:
+                pass
+    
+    def _recv(self, wait=0.01):
+        
+        while True:
+            try:
+                time.sleep(wait)
+                self.inp_buffer += self.connection.inp.get()
+                while '\r\n' in self.inp_buffer:
+                    self.line, self.inp_buffer = self.inp_buffer.split('\r\n', 1)
+                    self.prefix, self.command, self.args = self._parse_line(self.line)
+                    
+                    self.sender = self.args[0]
+                    self.message = self.args[-1]
+                    
+                    self.context = {
+                        'prefix' : self.prefix, 
+                        'command' : self.command, 
+                        'args' : self.args,
+                        'sender': self.sender if self.args else '',
+                        'user': self.prefix.rsplit('!', 1)[0],
+                        'message': self.message if self.args else '',
+                        'stale': False,
+                        }
+                    
+                    if self.command == 'PING':
+                        self._send_line('PONG ' + ''.join(self.args))
+                    if self.command == '001' and self.channels:
+                        for channel in self.channels:
+                            self._send_line('JOIN ' + channel)
+                    if self.command == '433':
+                        self.nick = self.nick + '_'
+                        self._send_line('NICK ' + self.nick)
+            except Exception:
+                pass
 
