@@ -63,7 +63,6 @@ class BotTestCase(unittest.TestCase):
         thread.start_new_thread(self.bot.run, ())
         line = 'PING :test\r\n'
         self.bot.connection.inp.put(line)
-        print self.bot.irc.inp_buffer
         self.assertTrue('PONG :test' in self.bot.irc.out_buffer)
         self.bot.shutdown = True
     
