@@ -73,7 +73,7 @@ class Kaa(object):
             elif takes_args:
                 plugin['func'](params)
             else:
-                plugin['func']
+                plugin['func']()
     
     def _parse_input(self, prefix='.'):
         '''This internal method handles the parsing of commands and events.
