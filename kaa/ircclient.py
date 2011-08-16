@@ -192,6 +192,7 @@ class IrcWrapper(object):
         self.channels = channels
         self.inp_buffer = ''
         self.out_buffer = ''
+        self.lock = thread.allocate_lock()
         
         # convenience
         self.line = ''
@@ -249,31 +250,31 @@ class IrcWrapper(object):
             time.sleep(wait)
             self.inp_buffer += self.connection.inp.get()
             while '\r\n' in self.inp_buffer and not self.connection.shutdown:
-                self.line, self.inp_buffer = self.inp_buffer.split('\r\n', 1)
-                self.prefix, self.command, self.args = self._parse_line(self.line)
-                
-                self.sender = self.args[0]
-                self.message = self.args[-1]
-                
-                self.context = {
-                    'prefix' : self.prefix, 
-                    'command' : self.command, 
-                    'args' : self.args,
-                    'sender': self.sender if self.args else '',
-                    'user': self.prefix.rsplit('!', 1)[0],
-                    'message': self.message if self.args else '',
-                    'stale': False,
-                    }
-                
-                if self.command == 'PING':
-                    self._send_line('PONG ' + ''.join(self.args))
-                if self.command == '001' and self.channels:
-                    for channel in self.channels:
-                        self._send_line('JOIN ' + channel)
-                if self.command == '433':
-                    self.nick = self.nick + '_'
-                    self._send_line('NICK ' + self.nick)
-                
+                with self.lock:
+                    self.line, self.inp_buffer = self.inp_buffer.split('\r\n', 1)
+                    self.prefix, self.command, self.args = self._parse_line(self.line)
+                    
+                    self.sender = self.args[0]
+                    self.message = self.args[-1]
+                    
+                    self.context = {
+                        'prefix' : self.prefix, 
+                        'command' : self.command, 
+                        'args' : self.args,
+                        'sender': self.sender if self.args else '',
+                        'user': self.prefix.rsplit('!', 1)[0],
+                        'message': self.message if self.args else '',
+                        'stale': False,
+                        }
+                    
+                    if self.command == 'PING':
+                        self._send_line('PONG ' + ''.join(self.args))
+                    if self.command == '001' and self.channels:
+                        for channel in self.channels:
+                            self._send_line('JOIN ' + channel)
+                    if self.command == '433':
+                        self.nick = self.nick + '_'
+                        self._send_line('NICK ' + self.nick)
     
     def _parse_line(self, line):
         '''This internal method takes a line as recieved from the IRC server 

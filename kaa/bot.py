@@ -88,29 +88,29 @@ class Kaa(object):
             args = self.irc.context.get('args')
             
             while not context_stale and args:
-                command = self.irc.context.get('command')
-                args = self.irc.context.get('args')
-                message = self.irc.context.get('message')
-                
-                if message.startswith(prefix):
-                    for plugin in self.config['PLUGINS']:
-                        hook = prefix + plugin['hook']
-                        try:
-                            self._dispatch_plugin(plugin, hook, message)
-                        except Exception, e:
-                            self.logger.error(str(e))
-                            continue
-                if command and command.isupper():
-                    for event in self.config['EVENTS']:
-                        hook = event['hook']
-                        try:
-                            self._dispatch_plugin(event, hook, command)
-                        except Exception, e:
-                            self.logger.error(str(e))
-                            continue
-                
-                # we're done here, context is stale, give us fresh fruit!
-                context_stale = self.irc.context['stale'] = True
+                with self.irc.lock:
+                    command = self.irc.context.get('command')
+                    args = self.irc.context.get('args')
+                    message = self.irc.context.get('message')
+                    if message.startswith(prefix):
+                        for plugin in self.config['PLUGINS']:
+                            hook = prefix + plugin['hook']
+                            try:
+                                self._dispatch_plugin(plugin, hook, message)
+                            except Exception, e:
+                                self.logger.error(str(e))
+                                continue
+                    if command and command.isupper():
+                        for event in self.config['EVENTS']:
+                            hook = event['hook']
+                            try:
+                                self._dispatch_plugin(event, hook, command)
+                            except Exception, e:
+                                self.logger.error(str(e))
+                                continue
+                    
+                    # we're done here, context is stale, give us fresh fruit!
+                    context_stale = self.irc.context['stale'] = True
     
     def command(self, hook=None, **kwargs):
         '''This method provides a decorator that can be used to load a 
