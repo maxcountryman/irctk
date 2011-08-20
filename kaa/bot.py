@@ -44,28 +44,23 @@ class Kaa(object):
             cls._instance = super(Kaa, cls).__new__(cls, *args, **kwargs)
         return cls._instance
     
-    def _update_plugins(self, plugin):
-        '''Appends a dictionary object, `plugin` to the `PLUGINS` value, i.e. 
-        a list.
+    def _update_plugins(self, plugins, plugin):
+        '''Updates a given list containing plugins, `plugins`, with a plugin 
+        dictionary object, `plugin`.
+        
+        Usually used to update the PLUGINS or EVENTS list in the configuration 
+        object.
         '''
         
-        if not self.config.get('PLUGINS'):
-            self.config['PLUGINS'] = []
-        return self.config['PLUGINS'].append(plugin)
-    
-    def _update_events(self, event):
-        '''Appends a dictionary object, 'event', to the `EVENTS` value, i.e. 
-        a list.
-        '''
-        
-        if not self.config.get('EVENTS'):
-            self.config['EVENTS'] = []
-        return self.config['EVENTS'].append(event)
+        if not self.config.get(plugins):
+            self.config[plugins] = []
+        return self.config[plugins].append(plugin)
     
     def _dispatch_plugin(self, plugin, hook, context):
         if context == hook or context.startswith(hook + ' '):
             params = context.split(hook, 1)[-1].strip() 
             takes_args = inspect.getargspec(plugin['func']).args
+            
             if plugin.get('threaded') and takes_args:
                 thread.start_new_thread(plugin['func'], (params,))
             elif plugin.get('threaded'):
@@ -79,19 +74,27 @@ class Kaa(object):
         '''This internal method handles the parsing of commands and events.
         Hooks for commands are prefixed with a character, by default `.`. This 
         may be overriden by specifying `prefix`.
+        
+        A context is maintained by our IRC wrapper, `IrcWrapper`; referenced 
+        as `self.irc`. In order to prevent a single line from being parsed 
+        repeatedly a variable `stale` is set to either True or False. 
+        
+        If the context is fresh, i.e. not `stale`, we loop over the line 
+        looking for matches to plugins.
+        
+        Once the context is consumed, we set the context variable `stale` to 
+        True.
         '''
         
         while True:
             time.sleep(0.01)
             
-            context_stale = self.irc.context.get('stale')
-            args = self.irc.context.get('args')
-            
-            while not context_stale and args:
-                with self.irc.lock:
-                    command = self.irc.context.get('command')
-                    args = self.irc.context.get('args')
-                    message = self.irc.context.get('message')
+            with self.irc.lock:
+                context_stale = self.irc.context.get('stale')
+                args = self.irc.context.get('args')
+                command = self.irc.context.get('command')
+                message = self.irc.context.get('message')
+                while not context_stale and args:
                     if message.startswith(prefix):
                         for plugin in self.config['PLUGINS']:
                             hook = prefix + plugin['hook']
@@ -133,7 +136,7 @@ class Kaa(object):
             plugin.setdefault('hook', f.func_name)
             plugin['func'] = f
             plugin['help'] = f.__doc__ if f.__doc__ else 'no help provided'
-            self._update_plugins(plugin)
+            self._update_plugins('PLUGINS', plugin)
             return f
         
         if kwargs or not inspect.isfunction(hook):
@@ -157,7 +160,7 @@ class Kaa(object):
         
         def wrapper(f):
             plugin['func'] = f
-            self._update_events(plugin)
+            self._update_plugins('EVENTS', plugin)
             return f
         
         plugin['hook'] = hook
@@ -165,7 +168,12 @@ class Kaa(object):
         return wrapper
     
     def _reloader_loop(self, wait=1):
-        '''Flask, CherryPy, reloader.py'''
+        '''This reloader is based off of the Flask reloader which in turn is 
+        based off of the CherryPy reloader.
+        
+        This internal method takes on parameter, `wait`, the wait time given 
+        in seconds. The default value is set to one second.
+        '''
         
         def iter_module_files():
             for module in sys.modules.values():
@@ -187,6 +195,21 @@ class Kaa(object):
         self._reloader(fnames, wait=wait)
     
     def _reloader(self, fnames, wait=1):
+        '''This reloader is based off of the Flask reloader which in turn is 
+        based off of the CherryPy reloader.
+        
+        This internal method takes two paramters, `fnames` and `wait.` Here 
+        we loop over a list of file names, `fnames`, using `os.stat` to 
+        determine if the mtime of the file has been changed. If so we use 
+        `imp.load_source` to reload the module.
+        
+        The `fnames` parameter should be a list of files names to be parsed by 
+        the reloader.
+        
+        The `wait` parameter specifies the time in seconds to run 
+        `time.sleep()`.
+        ''' 
+        
         mtimes = {}
         
         while True:
