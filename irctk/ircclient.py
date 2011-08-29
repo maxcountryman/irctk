@@ -1,6 +1,6 @@
 '''
-    kaa.ircclient
-    -------------
+    irctk.ircclient
+    ---------------
     
     Provides two classes, `TcpClient` and `IrcWrapper`.
     
@@ -194,15 +194,6 @@ class IrcWrapper(object):
         self.out_buffer = ''
         self.lock = thread.allocate_lock()
         
-        # convenience
-        self.line = ''
-        self.prefix = ''
-        self.command = ''
-        self.args = ''
-        
-        self.sender = self.args[0] if self.args else ''
-        self.message = self.args[-1] if self.args else ''
-        
         self.context = {}
         
     def _register(self):
@@ -263,6 +254,7 @@ class IrcWrapper(object):
                         'args' : self.args,
                         'sender': self.sender if self.args else '',
                         'user': self.prefix.rsplit('!', 1)[0],
+                        'hostmask': self.prefix.rsplit('!', 1)[-1],
                         'message': self.message if self.args else '',
                         'stale': False,
                         }
@@ -390,15 +382,6 @@ class IrcTestClient(IrcWrapper):
         self.inp_buffer = ''
         self.out_buffer = ''
         
-        # convenience
-        self.line = ''
-        self.prefix = ''
-        self.command = ''
-        self.args = ''
-        
-        self.sender = self.args[0] if self.args else ''
-        self.message = self.args[-1] if self.args else ''
-        
         self.context = {}
         
     def _send(self, wait=0.01):
@@ -411,38 +394,3 @@ class IrcTestClient(IrcWrapper):
                     self.connection.out.put(line)
             except Exception:
                 pass
-    
-    def _recv(self, wait=0.01):
-        
-        while True:
-            try:
-                time.sleep(wait)
-                self.inp_buffer += self.connection.inp.get()
-                while '\r\n' in self.inp_buffer:
-                    self.line, self.inp_buffer = self.inp_buffer.split('\r\n', 1)
-                    self.prefix, self.command, self.args = self._parse_line(self.line)
-                    
-                    self.sender = self.args[0]
-                    self.message = self.args[-1]
-                    
-                    self.context = {
-                        'prefix' : self.prefix, 
-                        'command' : self.command, 
-                        'args' : self.args,
-                        'sender': self.sender if self.args else '',
-                        'user': self.prefix.rsplit('!', 1)[0],
-                        'message': self.message if self.args else '',
-                        'stale': False,
-                        }
-                    
-                    if self.command == 'PING':
-                        self._send_line('PONG ' + ''.join(self.args))
-                    if self.command == '001' and self.channels:
-                        for channel in self.channels:
-                            self._send_line('JOIN ' + channel)
-                    if self.command == '433':
-                        self.nick = self.nick + '_'
-                        self._send_line('NICK ' + self.nick)
-            except Exception:
-                pass
-

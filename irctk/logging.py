@@ -1,6 +1,6 @@
 '''
-    kaa.logger
-    ----------
+    irctk.logger
+    ------------
     
     Creates the logging object `logger`.
 '''
@@ -12,11 +12,11 @@ import logging
 FORMAT = '%(asctime)s %(name)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s'
 
 def create_logger():
-    logger = logging.getLogger('kaa')
+    logger = logging.getLogger('irctk')
     logger.setLevel(logging.DEBUG)
     
-    fh = logging.FileHandler('kaa.log')
-    fh.setLevel(logging.DEBUG)
+    #fh = logging.FileHandler('kaa.log')
+    #fh.setLevel(logging.DEBUG)
     
     ch = logging.StreamHandler()
     ch.setLevel(logging.DEBUG)
@@ -24,9 +24,9 @@ def create_logger():
     formatter = logging.Formatter(FORMAT, datefmt='%Y-%m-%d %H:%M:%S')
     
     ch.setFormatter(formatter)
-    fh.setFormatter(formatter)
+    #fh.setFormatter(formatter)
     
     logger.addHandler(ch)
-    logger.addHandler(fh)
+    #logger.addHandler(fh)
     
     return logger

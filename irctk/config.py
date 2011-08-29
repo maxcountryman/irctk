@@ -1,6 +1,6 @@
 '''
-    kaa.config
-    ----------
+    irctk.config
+    ------------
     
     Sets up the configuration object.
 '''

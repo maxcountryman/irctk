@@ -1,8 +1,8 @@
 '''
-    kaa.bot
-    -------
+    irctk.bot
+    ---------
     
-    This defines the main class, `Kaa`, for use in creating new IRC bot apps.
+    This defines the main class, `Bot`, for use in creating new IRC bot apps.
 '''
 
 import os
@@ -16,7 +16,7 @@ from .config import Config
 from .ircclient import TcpClient, IrcWrapper, IrcTestClient
 
 
-class Kaa(object):
+class Bot(object):
     _instance = None
     root_path = os.path.abspath('')
     
@@ -41,7 +41,7 @@ class Kaa(object):
         without having to worry about which instance we reference.'''
         
         if not cls._instance:
-            cls._instance = super(Kaa, cls).__new__(cls, *args, **kwargs)
+            cls._instance = super(Bot, cls).__new__(cls, *args, **kwargs)
         return cls._instance
     
     def _update_plugins(self, plugins, plugin):
@@ -266,7 +266,7 @@ class Kaa(object):
             time.sleep(wait)
 
 
-class TestBot(Kaa):
+class TestBot(Bot):
     shutdown = False
     
     def __init__(self):

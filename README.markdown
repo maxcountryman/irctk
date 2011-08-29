@@ -1,25 +1,25 @@
-##Kaa
+##IrcTK
 
-Kaa is a simple IRC framework for developing IRC-based applications.
+IrcTK is a simple IRC framework for developing IRC-based applications.
 Essentially it wraps a loosely coupled, modified TCP client and IRC wrapper.
 
-The framework is designed to be easy to use. Your application source is automatically reloaded upon changes. Things like SSL are built into the wrapper.
+The framework is designed to be easy to use. Your application source is 
+automatically reloaded upon changes. Things like SSL are built into the 
+wrapper.
 
 ##Installation
 
-**NOTE** currently there is a namespace conflict on PyPI and this package is not yet available through pip, instead download and install manually using the second method below.
-
-Simply download and install via pip: `sudo pip install kaa`
+Simply download and install via pip: `sudo pip install irctk`
 
 Or you may clone the repo and install with setuptools: `python setup.py install`
 
 ##Writing Your First App
 
-Begin by import the framework bot object, called Kaa(). Assign this object to
+Begin by import the framework bot object, called IrcTK(). Assign this object to
 a local variable, e.g. `bot`.
     
-    from kaa import Kaa
-    bot = Kaa()
+    from irctk import Bot
+    bot = Bot()
 
 You may set up configuration for your application via an external configuration 
 file, such as `settings.cfg`, for instance. Several parameters are expected in
@@ -57,4 +57,10 @@ Finally you will want to run your app. To do so simply:
 
 ## What To Do Next?
 
-There are a few other important aspects to the framework. For example, the context of the current line is available in a dictionary object; `bot.irc.context`. This dictionary allows you to do things like direct messages to a given sender or user, although keep in mind this functionality is built into the `send_reply` method of the IRC client wrapper. However this allows for more advanced behavior as you will have full access to the variables parsed from the line your plugin was called on.
+There are a few other important aspects to the framework. For example, the 
+context of the current line is available in a dictionary object; 
+`bot.irc.context`. This dictionary allows you to do things like direct 
+messages to a given sender or user, although keep in mind this functionality 
+is built into the `send_reply` method of the IRC client wrapper. However this 
+allows for more advanced behavior as you will have full access to the 
+variables parsed from the line your plugin was called on.
