@@ -1,10 +1,10 @@
-from kaa import Kaa
+from irctk import Bot
 
 import urllib
 import urlparse
 import json
 
-bot = Kaa()
+bot = Bot()
 bot.config.from_pyfile('settings.cfg')
 
 
