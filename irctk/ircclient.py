@@ -24,8 +24,6 @@ from .logging import create_logger
 
 logger = create_logger()
 
-LINE_LIMIT = 405
-
 
 class TcpClient(object):
     '''This is a TCP client that has been adapted for IRC connections. The 
@@ -150,10 +148,11 @@ class TcpClient(object):
         
         while True:
             
-            line = self.out.get().splitlines()[0][:LINE_LIMIT]
-            self.out_buffer += line.encode('utf-8', 'replace') + '\r\n'
-            
-            self.logger.info(line)
+            line = self.out.get().splitlines()
+            if line:
+                line = line[0]
+                self.out_buffer += line.encode('utf-8', 'replace') + '\r\n'
+                self.logger.info(line)
             
             while self.out_buffer and not self.shutdown:
                 
@@ -205,20 +204,35 @@ class IrcWrapper(object):
         lines = ['NICK ' + self.nick, self.user]
         self._send_lines(lines)
     
-    def _send(self, wait=0.01):
+    def _send(self, wait=0.01, rate=5.0, per=2.0):
         '''This internal method reads off of `self.out_buffer`, sending the 
         contents to the connection object's output queue.
         
         Here we use `time.sleep` to sleep `wait`-number of seconds. This 
         prevents the threads from running all the time and consequently 
         maxing out the CPU.
+        
+        TODO: rate limiter does not yet work. Perhaps a proper implementation 
+        of the leaky bucket?
         '''
         
         while True:
             time.sleep(wait)
+            allowance = rate
+            last_check = time.time()
             while '\r\n' in self.out_buffer and not self.connection.shutdown:
                 line, self.out_buffer = self.out_buffer.split('\r\n', 1)
-                self.connection.out.put(line)
+                current = time.time()
+                time_passed = current - last_check
+                allowance += time_passed * (rate / per)
+                if allowance > rate:
+                    allowance = rate # throttle
+                if allowance <= 1.0: # no allowance, wait
+                    print 'waiting due to rate limiter...'
+                    time.sleep(1.0)
+                else:
+                    self.connection.out.put(line)
+                    allowance -= 1.0
     
     def _recv(self, wait=0.01):
         '''This internal method pulls data from the connection's input queue.
@@ -295,10 +309,12 @@ class IrcWrapper(object):
         return prefix, command, args
     
     def _send_line(self, line):
-        '''This internal method takes one parameter, `line`, and passes it 
-        directly into the `_send()` loop. This is used for sending raw 
-        messages to the server. Not for use outside of the scope of this 
-        class!
+        '''This internal method takes one parameter, `lines`, loops over it 
+        and sends each element directly to the `_send()` loop. This is used 
+        for sending raw messages to the server. Not for use outside of the 
+        scope of this class!
+        
+        This method is not rate-limited. Use with caution.
         '''
         
         self.out_buffer += line + '\r\n'
@@ -308,11 +324,16 @@ class IrcWrapper(object):
         and sends each element directly to the `_send()` loop. This is used 
         for sending raw messages to the server. Not for use outside of the 
         scope of this class!
+        
+        The a `rate` of lines to send may be specified, defaults to 5.0. This 
+        corresponds to the `per` parameter, which detauls to 20.0. So a rate 
+        of 5 lines per 20 seconds is the default, i.e. no more than 5 lines 
+        in 20 seconds.
         '''
         
         for line in lines:
             self.out_buffer += line + '\r\n'
-    
+        
     def run(self):
         '''This method sets up the connection by sending the USER command to 
         the server we are connecting to. Once our client is acknowledged and 
@@ -325,13 +346,19 @@ class IrcWrapper(object):
         thread.start_new_thread(self._send, ())
     
     def send_command(self, command, args=[], prefix=None):
-        '''TODO'''
+        '''This method provides a wrapper to an IRC command. It takes two 
+        parameters, `command` and `args` which relate to their respective IRC 
+        equivalents.
+        
+        The arguments are concatenated to the command and then sent along to 
+        the connection queue.
+        '''
         
         command = command + ' ' + ''.join(args)
         if prefix:
             command = prefix + command
         
-        self._send_line(command)
+        self._send_lines([command])
     
     def send_message(self, recipient, message, action=False):
         '''TODO'''
@@ -341,14 +368,24 @@ class IrcWrapper(object):
         else:
             self.send_command('PRIVMSG', [recipient + ' :' + message])
     
-    def send_reply(self, message, action=False):
+    def send_reply(self, message, action=False, line_limit=400):
         '''TODO'''
         
         if self.context['sender'].startswith('#'):
             recipient = self.context['sender']
         else:
             recipient = self.context['user']
-        self.send_message(recipient, message, action)
+        
+        messages = []
+        def handle_long_message(message):
+            message, extra = message[:line_limit], message[line_limit:]
+            messages.append(message)
+            if extra:
+                handle_long_message(extra)
+        handle_long_message(message)
+        
+        for message in messages:
+            self.send_message(recipient, message, action)
     
     def send_notice(self, recipient, message):
         '''TODO'''
