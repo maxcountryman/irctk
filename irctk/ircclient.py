@@ -204,7 +204,7 @@ class IrcWrapper(object):
         lines = ['NICK ' + self.nick, self.user]
         self._send_lines(lines)
     
-    def _send(self, wait=0.01, rate=5.0, per=2.0):
+    def _send(self, wait=0.01, rate=3.0, per=60.0):
         '''This internal method reads off of `self.out_buffer`, sending the 
         contents to the connection object's output queue.
         
@@ -216,23 +216,19 @@ class IrcWrapper(object):
         of the leaky bucket?
         '''
         
+        wait_time = 1.0
         while True:
             time.sleep(wait)
-            allowance = rate
-            last_check = time.time()
             while '\r\n' in self.out_buffer and not self.connection.shutdown:
                 line, self.out_buffer = self.out_buffer.split('\r\n', 1)
-                current = time.time()
-                time_passed = current - last_check
-                allowance += time_passed * (rate / per)
-                if allowance > rate:
-                    allowance = rate # throttle
-                if allowance <= 1.0: # no allowance, wait
-                    print 'waiting due to rate limiter...'
-                    time.sleep(1.0)
-                else:
-                    self.connection.out.put(line)
-                    allowance -= 1.0
+                if len(self.out_buffer) >= 8192:
+                    wait_time *= wait_time
+                    time.sleep(wait_time)
+                elif wait_time > 1.0:
+                    wait_time /= wait_time
+                elif wait_time < 1.0:
+                    wait_time = 1.0
+                self.connection.out.put(line)
     
     def _recv(self, wait=0.01):
         '''This internal method pulls data from the connection's input queue.
@@ -370,6 +366,8 @@ class IrcWrapper(object):
     
     def send_reply(self, message, action=False, line_limit=400):
         '''TODO'''
+        
+        #get context
         
         if self.context['sender'].startswith('#'):
             recipient = self.context['sender']
