@@ -56,19 +56,42 @@ class Bot(object):
             self.config[plugins] = []
         return self.config[plugins].append(plugin)
     
+    def _send_reply(self, message, context, action=False, line_limit=400):
+        '''TODO'''
+        
+        if context['sender'].startswith('#'):
+            recipient = context['sender']
+        else:
+            recipient = context['user']
+        
+        messages = []
+        def handle_long_message(message):
+            message, extra = message[:line_limit], message[line_limit:]
+            messages.append(message)
+            if extra:
+                handle_long_message(extra)
+        handle_long_message(message)
+        
+        for message in messages:
+            self.irc.send_message(recipient, message, action)
+    
     def _dispatch_plugin(self, plugin, hook, context):
+        '''TODO'''
+        
         if context == hook or context.startswith(hook + ' '):
-            params = context.split(hook, 1)[-1].strip() 
+            plugin_context = plugin['context']
             takes_args = inspect.getargspec(plugin['func']).args
             
-            if plugin.get('threaded') and takes_args:
-                thread.start_new_thread(plugin['func'], (params,))
-            elif plugin.get('threaded'):
-                thread.start_new_thread(plugin['func'], ())
-            elif takes_args:
-                plugin['func'](params)
+            action = False
+            if plugin.get('action') == True:
+                action = True
+            
+            if takes_args:
+                message = plugin['func'](plugin_context)
             else:
-                plugin['func']()
+                message = plugin['func']()
+            
+            return self._send_reply(message, plugin['context'], action)
     
     def _parse_input(self, prefix='.'):
         '''This internal method handles the parsing of commands and events.
@@ -97,9 +120,10 @@ class Bot(object):
                 while not context_stale and args:
                     if message.startswith(prefix):
                         for plugin in self.config['PLUGINS']:
+                            plugin['context'] = self.irc.context # set context
                             hook = prefix + plugin['hook']
                             try:
-                                self._dispatch_plugin(plugin, hook, message)
+                                thread.start_new_thread(self._dispatch_plugin, (plugin, hook, message))
                             except Exception, e:
                                 self.logger.error(str(e))
                                 continue
