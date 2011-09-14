@@ -16,6 +16,12 @@ from .config import Config
 from .ircclient import TcpClient, IrcWrapper, IrcTestClient
 
 
+class Context(object):
+    def __init__(self, line, args):
+        self.line = line
+        self.args = args
+
+
 class Bot(object):
     _instance = None
     root_path = os.path.abspath('')
@@ -79,19 +85,25 @@ class Bot(object):
         '''TODO'''
         
         if context == hook or context.startswith(hook + ' '):
-            plugin_context = plugin['context']
+            plugin_args = plugin['context']['message'].split(hook, 1)[-1].strip()
+            plugin_context = Context(plugin['context'], plugin_args)
             takes_args = inspect.getargspec(plugin['func']).args
             
             action = False
             if plugin.get('action') == True:
                 action = True
             
+            notice = False
+            if plugin.get('notice') == True:
+                notice = True
+            
             if takes_args:
                 message = plugin['func'](plugin_context)
             else:
                 message = plugin['func']()
             
-            return self._send_reply(message, plugin['context'], action)
+            if message:
+                return self._send_reply(message, plugin_context.line, action)
     
     def _parse_input(self, prefix='.'):
         '''This internal method handles the parsing of commands and events.
@@ -129,9 +141,10 @@ class Bot(object):
                                 continue
                     if command and command.isupper():
                         for event in self.config['EVENTS']:
+                            event['context'] = self.irc.context
                             hook = event['hook']
                             try:
-                                self._dispatch_plugin(event, hook, command)
+                                thread.start_new_thread(self._dispatch_plugin, (event, hook, command))
                             except Exception, e:
                                 self.logger.error(str(e))
                                 continue
