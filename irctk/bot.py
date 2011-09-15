@@ -84,6 +84,43 @@ class Bot(object):
             if message:
                 self.reply(message, plugin_context.line, action, notice)
     
+    def _handle_worker_threads(self, wait=10.0):
+        '''TODO'''
+        
+        idle_workers = 0
+        
+        def handle_threads(idle_workers):
+            time.sleep(wait)
+            
+            pool_length = len(self.worker_pool)
+            workers = self.config['WORKERS']
+            total_workers = workers - pool_length
+            
+            if pool_length < workers:
+                for worker in range(total_workers):
+                    ident = self._spawn_worker()
+                    spawning = 'Spawning worker {0}; too few workers'.format(ident)
+                    self.logger.info(spawning)
+            
+            if not self.work_queue.empty():
+                ident = self._spawn_worker()
+                spawning = 'Spawning worker {0}'.format(ident)
+                self.logger.info(spawning)
+            
+            if self.work_queue.all_tasks_done.acquire(0):
+                self.work_queue.all_tasks_done.release()
+                if pool_length > workers:
+                    idle_workers += 1
+                    idlers = 'We have {0} idle workers.'.format(idle_workers)
+                    self.logger.info(idlers)
+            
+            if idle_workers > workers and idle_workers > 0:
+                ident = self.worker_pool.pop(0)
+                idle_workers -= 1
+                self.logger.info('Killing idle worker {0}'.format(ident))
+        
+        handle_threads(idle_workers)
+    
     def _parse_input(self, prefix='.'):
         '''This internal method handles the parsing of commands and events.
         Hooks for commands are prefixed with a character, by default `.`. This 
@@ -100,32 +137,10 @@ class Bot(object):
         True.
         '''
         
-        last_check = time.time()
-        idle_workers = 0
         while True:
             time.sleep(0.01)
             
-            if len(self.worker_pool) < self.config['WORKERS']:
-                for x in range(self.config['WORKERS'] - len(self.worker_pool)):
-                    ident = self._spawn_worker()
-                    self.logger.info('Spawned worker %d because there are to little.' % ident)
-            if not self.work_queue.empty():
-                ident = self._spawn_worker()
-                self.logger.info('Spawned worker %d because we have to much work to do.' % ident)
-            elif (time.time() - last_check) > 10:
-                last_check = time.time()
-                if self.work_queue.all_tasks_done.acquire(0):
-                    self.work_queue.all_tasks_done.release()
-                    if len(self.worker_pool) > self.config['WORKERS']:
-                        idle_workers += 1
-                        # string formatting is deprecated, format() instead
-                        idlers = 'We have {0} idle workers.'.format(idle_workers)
-                        self.logger.info(idlers)
-            
-            if idle_workers > self.config['WORKERS']:
-                ident = self.worker_pool.pop(0)
-                idle_workers -= 1
-                self.logger.info('Killed left over worker {0}'.format(ident))
+            self._handle_worker_threads()
             
             with self.irc.lock:
                 context_stale = self.irc.context.get('stale')
@@ -147,15 +162,15 @@ class Bot(object):
                             event['context'] = self.irc.context
                             hook = event['hook']
                             try:
-                                thread.start_new_thread(self._dispatch_plugin, (event, hook, command))
+                                self._dispatch_plugin, (event, hook, command)
                             except Exception, e:
                                 self.logger.error(str(e))
                                 continue
                     
                     # we're done here, context is stale, give us fresh fruit!
                     context_stale = self.irc.context['stale'] = True
-                    # Finaly handle messages returned from the plugins.
-                    #self._handle_plugin_messages()
+                
+                # Finaly handle messages returned from the plugins.
                 self._handle_plugin_messages()
     
     def _reloader_loop(self, wait=1.0):
