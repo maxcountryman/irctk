@@ -18,7 +18,7 @@ import thread
 import Queue
 import time
 
-from ssl import wrap_socket
+from ssl import wrap_socket, SSLError
 
 from .logging import create_logger
 
@@ -71,7 +71,7 @@ class TcpClient(object):
         socket.setdefaulttimeout(self.timeout)
         self.logger = logger
     
-    def connect(self):
+    def connect(self, reconnect=False):
         '''This method initiates the socket connection by passing a tuple, 
         `server` containing the host and port, to the socket object and then 
         wraps our `_recv` and `_send` methods in threads.
@@ -94,8 +94,9 @@ class TcpClient(object):
         
         server = (self.host, self.port)
         self.socket.connect(server)
-        thread.start_new_thread(self._recv, ())
-        thread.start_new_thread(self._send, ())
+        if not reconnect:
+            thread.start_new_thread(self._recv, ())
+            thread.start_new_thread(self._send, ())
     
     def close(self, wait=1):
         '''This method closes an open socket. As per the original UNIX spec, 
@@ -123,9 +124,12 @@ class TcpClient(object):
         '''
         
         try:
-            self.close()
+            try:
+                self.close()
+            except Exception, e:
+                self.logger.debug('exception while closing old socket: ' + str(e))
             time.sleep(wait)
-            self.connect()
+            self.connect(reconnect=True)
         except Exception, e:
             self.logger.debug('exception during reconnect: ' + str(e))
     
@@ -134,7 +138,13 @@ class TcpClient(object):
         
         while True:
             
-            data = self.socket.recv(4096)
+            try:
+                data = self.socket.recv(4096)
+            except (SSLError, socket.error):
+                self.logger.error('Lost connection to server, reconnecting.')
+                self.reconnect(5)
+                self.inp.put('register internal reconnect\r\n')
+                continue
             self.inp_buffer += data
             
             while '\r\n' in self.inp_buffer and not self.shutdown:
@@ -271,12 +281,14 @@ class IrcWrapper(object):
                     
                     if self.command == 'PING':
                         self._send_line('PONG ' + ''.join(self.args))
-                    if self.command == '001' and self.channels:
+                    elif self.command == '001' and self.channels:
                         for channel in self.channels:
                             self._send_line('JOIN ' + channel)
-                    if self.command == '433':
+                    elif self.command == '433':
                         self.nick = self.nick + '_'
                         self._send_line('NICK ' + self.nick)
+                    elif self.command == 'register':
+                        self._register()
     
     def _parse_line(self, line):
         '''This internal method takes a line as recieved from the IRC server 
