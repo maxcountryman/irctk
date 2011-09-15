@@ -76,7 +76,7 @@ class Bot(object):
             
             self.work_queue.put((plugin, plugin_context))
     
-    def _handle_plugin_messages(self):
+    def _handle_plugin_result(self):
         '''TODO'''
         
         while not self.return_queue.empty():
@@ -84,13 +84,14 @@ class Bot(object):
             if message:
                 self.reply(message, plugin_context.line, action, notice)
     
-    def _handle_worker_threads(self, wait=10.0):
+    def _handle_worker_threads(self, wait=5.0):
         '''TODO'''
         
         idle_workers = 0
         
         def handle_threads(idle_workers):
-            time.sleep(wait)
+            
+            time.sleep(wait) # replaces time delta offsets, so execution is 
             
             pool_length = len(self.worker_pool)
             workers = self.config['WORKERS']
@@ -171,7 +172,7 @@ class Bot(object):
                     context_stale = self.irc.context['stale'] = True
                 
                 # Finaly handle messages returned from the plugins.
-                self._handle_plugin_messages()
+                self._handle_plugin_result()
     
     def _reloader_loop(self, wait=1.0):
         '''This reloader is based off of the Flask reloader which in turn is 
@@ -254,7 +255,7 @@ class Bot(object):
         return ident
     
     def _plugin_worker(self, work_queue, return_queue):
-        ''' Pols the work_queue for jobs, runs them and places the result on the
+        ''' Polls the work_queue for jobs, runs them and places the result on the
         return_queue.
         '''
         
@@ -279,10 +280,9 @@ class Bot(object):
                 self.work_queue.task_done()
         # Catch all exceptions so we can notify the pool we died.
         except Exception, e:
-            message = 'Error in worker thread, Exiting.'
-            self.logger.error(message)
-            self.logger.error(str(e))
-            self.worker_pool.remove(thread.get_ident())
+            error = 'Error {0} in worker thread; exiting.'.format(e)
+            self.logger.error(error)
+            self.worker_pool.pop(thread.get_ident())
             raise e
     
     def command(self, hook=None, **kwargs):
@@ -375,7 +375,7 @@ class Bot(object):
         self.logger = self.connection.logger
         
         # Set the worker thread pool up.
-        for x in range(self.config['WORKERS']):
+        for worker in range(self.config['WORKERS']):
             self._spawn_worker()
         
         self.connection.connect()
@@ -386,7 +386,7 @@ class Bot(object):
         
         while True:
             time.sleep(wait)
-    
+
 
 class TestBot(Bot):
     shutdown = False

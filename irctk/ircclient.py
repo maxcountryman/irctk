@@ -18,7 +18,7 @@ import thread
 import Queue
 import time
 
-from ssl import wrap_socket, SSLError
+from ssl import wrap_socket
 
 from .logging import create_logger
 
@@ -58,7 +58,7 @@ class TcpClient(object):
         client.close()
     '''
     
-    def __init__(self, host, port, ssl=False, timeout=300):
+    def __init__(self, host, port, ssl=False, timeout=300.0):
         self.ssl = ssl
         self.host = host
         self.port = port
@@ -98,7 +98,7 @@ class TcpClient(object):
             thread.start_new_thread(self._recv, ())
             thread.start_new_thread(self._send, ())
     
-    def close(self, wait=1):
+    def close(self, wait=1.0):
         '''This method closes an open socket. As per the original UNIX spec, 
         the socket is first alerted of an imminent shutdown by calling 
         `shutdown()`. We then wait for `wait`-number of seconds. Finally we 
@@ -111,7 +111,7 @@ class TcpClient(object):
         time.sleep(wait)
         self.socket.close()
     
-    def reconnect(self, wait=1):
+    def reconnect(self, wait=1.0):
         '''This method will attempt to reconnect to a server. It should be 
         called contextually after some failure perhaps. If the reconnection 
         fails the error will be reported and execution will carry on.
@@ -133,19 +133,26 @@ class TcpClient(object):
         except Exception, e:
             self.logger.debug('exception during reconnect: ' + str(e))
     
-    def _recv(self):
+    def _recv(self, wait=5.0, byte_size=4096):
         '''Internal method that processes incoming data.'''
         
         while True:
             
             try:
-                data = self.socket.recv(4096)
-            except (SSLError, socket.error):
-                self.logger.error('Lost connection to server, reconnecting.')
-                self.reconnect(5)
-                self.inp.put('register internal reconnect\r\n')
-                continue
+                data = self.socket.recv(byte_size)
+            except (socket.error, socket.timeout):
+                self.logger.error('Connection lost, reconnecting.')
+                self.reconnect(wait)
+                wait *= wait
+            
             self.inp_buffer += data
+            
+            if 'ERROR :Closing link:' in self.inp_buffer:
+                self.logger.info(self.inp_buffer)
+                self.logger.error('Connection lost, reconnecting.')
+                self.reconnect(wait)
+                wait *= wait
+                #self.inp.put('register internal reconnect\r\n')
             
             while '\r\n' in self.inp_buffer and not self.shutdown:
                 
@@ -214,7 +221,7 @@ class IrcWrapper(object):
         lines = ['NICK ' + self.nick, self.user]
         self._send_lines(lines)
     
-    def _send(self, wait=0.1, rate=3.0, per=60.0):
+    def _send(self, wait=0.1, wait_time=1.0, wait_base=1.0, byte_size=8192):
         '''This internal method reads off of `self.out_buffer`, sending the 
         contents to the connection object's output queue.
         
@@ -226,18 +233,17 @@ class IrcWrapper(object):
         of the leaky bucket?
         '''
         
-        wait_time = 1.0
         while True:
             time.sleep(wait)
             while '\r\n' in self.out_buffer and not self.connection.shutdown:
                 line, self.out_buffer = self.out_buffer.split('\r\n', 1)
-                if len(self.out_buffer) >= 8192:
+                if len(self.out_buffer) >= byte_size:
                     wait_time *= wait_time
                     time.sleep(wait_time)
-                elif wait_time > 1.0:
+                elif wait_time > wait_base:
                     wait_time /= wait_time
-                elif wait_time < 1.0:
-                    wait_time = 1.0
+                elif wait_time < wait_base:
+                    wait_time = wait_base
                 self.connection.out.put(line)
     
     def _recv(self):
@@ -280,7 +286,7 @@ class IrcWrapper(object):
                     
                     if self.command == 'PING':
                         self._send_line('PONG ' + ''.join(self.args))
-                    elif self.command == '001' and self.channels:
+                    if self.command == '001' and self.channels:
                         for channel in self.channels:
                             self._send_line('JOIN ' + channel)
                     elif self.command == '433':
@@ -379,8 +385,6 @@ class IrcWrapper(object):
     
     def send_reply(self, message, action=False, line_limit=400):
         '''Warning: Deprecated. Use the reply method in bot.py instead.'''
-        
-        #get context
         
         if self.context['sender'].startswith('#'):
             recipient = self.context['sender']
