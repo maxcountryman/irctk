@@ -10,6 +10,7 @@ import sys
 import time
 import inspect
 import thread
+import Queue
 import imp
 
 from .config import Config
@@ -25,6 +26,9 @@ class Context(object):
 class Bot(object):
     _instance = None
     root_path = os.path.abspath('')
+    work_queue = Queue.Queue()
+    return_queue = Queue.Queue()
+    worker_pool = []
     
     default_config = dict({
         'SERVER': 'irc.voxinfinitus.net',
@@ -35,7 +39,8 @@ class Bot(object):
         'REALNAME': 'Kaa the rock python',
         'CHANNELS': ['#voxinfinitus'],
         'PLUGINS': [],
-        'EVENTS': []
+        'EVENTS': [],
+        'WORKERS': 2
         })
     
     def __init__(self):
@@ -62,48 +67,20 @@ class Bot(object):
             self.config[plugins] = []
         return self.config[plugins].append(plugin)
     
-    def _send_reply(self, message, context, action=False, line_limit=400):
-        '''TODO'''
-        
-        if context['sender'].startswith('#'):
-            recipient = context['sender']
-        else:
-            recipient = context['user']
-        
-        messages = []
-        def handle_long_message(message):
-            message, extra = message[:line_limit], message[line_limit:]
-            messages.append(message)
-            if extra:
-                handle_long_message(extra)
-        handle_long_message(message)
-        
-        for message in messages:
-            self.irc.send_message(recipient, message, action)
-    
     def _dispatch_plugin(self, plugin, hook, context):
         '''TODO'''
         
         if context == hook or context.startswith(hook + ' '):
             plugin_args = plugin['context']['message'].split(hook, 1)[-1].strip()
             plugin_context = Context(plugin['context'], plugin_args)
-            takes_args = inspect.getargspec(plugin['func']).args
             
-            action = False
-            if plugin.get('action') == True:
-                action = True
-            
-            notice = False
-            if plugin.get('notice') == True:
-                notice = True
-            
-            if takes_args:
-                message = plugin['func'](plugin_context)
-            else:
-                message = plugin['func']()
-            
+            self.work_queue.put((plugin, plugin_context))
+    
+    def _handle_plugin_messages(self):
+        while not self.return_queue.empty():
+            message, plugin_context, action, notice = self.return_queue.get()
             if message:
-                return self._send_reply(message, plugin_context.line, action)
+                self.reply(message, plugin_context.line, action, notice)
     
     def _parse_input(self, prefix='.'):
         '''This internal method handles the parsing of commands and events.
@@ -121,8 +98,30 @@ class Bot(object):
         True.
         '''
         
+        last_check = time.time()
+        idle_workers = 0
         while True:
-            time.sleep(0.01)
+            time.sleep(0.10)
+            
+            if len(self.worker_pool) < self.config['WORKERS']:
+                for x in range(self.config['WORKERS'] - len(self.worker_pool)):
+                    ident = self._spawn_worker()
+                    self.logger.info('Spawned worker %d because there are to little.' % ident)
+            if not self.work_queue.empty():
+                ident = self._spawn_worker()
+                self.logger.info('Spawned worker %d because we have to much work to do.' % ident)
+            elif (time.time() - last_check) > 10:
+                last_check = time.time()
+                if self.work_queue.all_tasks_done.acquire(0):
+                    self.work_queue.all_tasks_done.release()
+                    if len(self.worker_pool) > self.config['WORKERS']:
+                        idle_workers += 1
+                        self.logger.info('We have %d idle workers.' % idle_workers)
+            
+            if idle_workers > self.config['WORKERS']:
+                ident = self.worker_pool.pop(0)
+                idle_workers -= 1
+                self.logger.info('Killed left over worker %d.' % ident)
             
             with self.irc.lock:
                 context_stale = self.irc.context.get('stale')
@@ -135,7 +134,7 @@ class Bot(object):
                             plugin['context'] = self.irc.context # set context
                             hook = prefix + plugin['hook']
                             try:
-                                thread.start_new_thread(self._dispatch_plugin, (plugin, hook, message))
+                                self._dispatch_plugin(plugin, hook, message)
                             except Exception, e:
                                 self.logger.error(str(e))
                                 continue
@@ -151,58 +150,9 @@ class Bot(object):
                     
                     # we're done here, context is stale, give us fresh fruit!
                     context_stale = self.irc.context['stale'] = True
-    
-    def command(self, hook=None, **kwargs):
-        '''This method provides a decorator that can be used to load a 
-        function into the global plugins list.:
-        
-        If the `hook` parameter is provided the decorator will assign the hook 
-        key to the value of `hook`, update the `plugin` dict, and then return 
-        the wrapped function to the wrapper.
-        
-        Therein the plugin dictionary is updated with the `func` key whose 
-        value is set to the wrapped function.
-        
-        Otherwise if no `hook` parameter is passed the, `hook` is assumed to 
-        be the wrapped function and handled accordingly.
-        '''
-        
-        plugin = {}
-        
-        def wrapper(f):
-            plugin.setdefault('hook', f.func_name)
-            plugin['func'] = f
-            plugin['help'] = f.__doc__ if f.__doc__ else 'no help provided'
-            self._update_plugins('PLUGINS', plugin)
-            return f
-        
-        if kwargs or not inspect.isfunction(hook):
-            if hook:
-                plugin['hook'] = hook
-            plugin.update(kwargs)
-            return wrapper
-        else:
-            return wrapper(hook)
-    
-    def event(self, hook, **kwargs):
-        '''This method provides a decorator that can be used to load a 
-        function into the global events list.
-        
-        It assumes one parameter, `hook`, i.e. the event you wish to bind 
-        this wrapped function to. For example, JOIN, which would call the 
-        function on all JOIN events.
-        '''
-        
-        plugin = {}
-        
-        def wrapper(f):
-            plugin['func'] = f
-            self._update_plugins('EVENTS', plugin)
-            return f
-        
-        plugin['hook'] = hook
-        plugin.update(kwargs)
-        return wrapper
+                    # Finaly handle messages returned from the plugins.
+                    #self._handle_plugin_messages()
+                self._handle_plugin_messages()
     
     def _reloader_loop(self, wait=1):
         '''This reloader is based off of the Flask reloader which in turn is 
@@ -275,6 +225,77 @@ class Bot(object):
                         
             time.sleep(wait)
     
+    def command(self, hook=None, **kwargs):
+        '''This method provides a decorator that can be used to load a 
+        function into the global plugins list.:
+        
+        If the `hook` parameter is provided the decorator will assign the hook 
+        key to the value of `hook`, update the `plugin` dict, and then return 
+        the wrapped function to the wrapper.
+        
+        Therein the plugin dictionary is updated with the `func` key whose 
+        value is set to the wrapped function.
+        
+        Otherwise if no `hook` parameter is passed the, `hook` is assumed to 
+        be the wrapped function and handled accordingly.
+        '''
+        
+        plugin = {}
+        
+        def wrapper(f):
+            plugin.setdefault('hook', f.func_name)
+            plugin['func'] = f
+            plugin['help'] = f.__doc__ if f.__doc__ else 'no help provided'
+            self._update_plugins('PLUGINS', plugin)
+            return f
+        
+        if kwargs or not inspect.isfunction(hook):
+            if hook:
+                plugin['hook'] = hook
+            plugin.update(kwargs)
+            return wrapper
+        else:
+            return wrapper(hook)
+    
+    def event(self, hook, **kwargs):
+        '''This method provides a decorator that can be used to load a 
+        function into the global events list.
+        
+        It assumes one parameter, `hook`, i.e. the event you wish to bind 
+        this wrapped function to. For example, JOIN, which would call the 
+        function on all JOIN events.
+        '''
+        
+        plugin = {}
+        
+        def wrapper(f):
+            plugin['func'] = f
+            self._update_plugins('EVENTS', plugin)
+            return f
+        
+        plugin['hook'] = hook
+        plugin.update(kwargs)
+        return wrapper
+    
+    def reply(self, message, context, action=False, notice=False, line_limit=400):
+        '''TODO'''
+        
+        if context['sender'].startswith('#'):
+            recipient = context['sender']
+        else:
+            recipient = context['user']
+        
+        messages = []
+        def handle_long_message(message):
+            message, extra = message[:line_limit], message[line_limit:]
+            messages.append(message)
+            if extra:
+                handle_long_message(extra)
+        handle_long_message(message)
+        
+        for message in messages:
+            self.irc.send_message(recipient, message, action, notice)
+    
     def run(self, wait=0.01):
         
         self.connection = TcpClient(
@@ -293,6 +314,10 @@ class Bot(object):
         
         self.logger = self.connection.logger
         
+        # Set the worker thread pool up.
+        for x in range(self.config['WORKERS']):
+            self._spawn_worker()
+        
         self.connection.connect()
         self.irc.run()
         
@@ -301,6 +326,43 @@ class Bot(object):
         
         while True:
             time.sleep(wait)
+
+
+    def _spawn_worker(self):
+        ident = thread.start_new_thread(self._plugin_worker,
+                                       (self.work_queue, self.return_queue))
+        self.worker_pool.append(ident)
+        return ident
+
+    def _plugin_worker(self, work_queue, return_queue):
+        ''' Pols the work_queue for jobs, runs them and places the result on the
+        return_queue.'''
+        try:
+            while thread.get_ident() in self.worker_pool:
+                plugin, plugin_context = work_queue.get(True)
+                takes_args = inspect.getargspec(plugin['func']).args
+                
+                action = False
+                if plugin.get('action') == True:
+                    action = True
+                
+                notice = False
+                if plugin.get('notice') == True:
+                    notice = True
+                
+                if takes_args:
+                    message = plugin['func'](plugin_context)
+                else:
+                    message = plugin['func']()
+                return_queue.put((message, plugin_context, action, notice))
+                self.work_queue.task_done()
+        # Catch all exceptions so we can notify the pool we died.
+        except Exception, e:
+            message = 'Error in worker thread, Exiting.'
+            self.logger.error(message)
+            self.logger.error(str(e))
+            self.worker_pool.remove(thread.get_ident())
+            raise
 
 
 class TestBot(Bot):
