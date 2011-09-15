@@ -77,6 +77,8 @@ class Bot(object):
             self.work_queue.put((plugin, plugin_context))
     
     def _handle_plugin_messages(self):
+        '''TODO'''
+        
         while not self.return_queue.empty():
             message, plugin_context, action, notice = self.return_queue.get()
             if message:
@@ -101,7 +103,7 @@ class Bot(object):
         last_check = time.time()
         idle_workers = 0
         while True:
-            time.sleep(0.10)
+            time.sleep(0.01)
             
             if len(self.worker_pool) < self.config['WORKERS']:
                 for x in range(self.config['WORKERS'] - len(self.worker_pool)):
@@ -116,12 +118,14 @@ class Bot(object):
                     self.work_queue.all_tasks_done.release()
                     if len(self.worker_pool) > self.config['WORKERS']:
                         idle_workers += 1
-                        self.logger.info('We have %d idle workers.' % idle_workers)
+                        # string formatting is deprecated, format() instead
+                        idlers = 'We have {0} idle workers.'.format(idle_workers)
+                        self.logger.info(idlers)
             
             if idle_workers > self.config['WORKERS']:
                 ident = self.worker_pool.pop(0)
                 idle_workers -= 1
-                self.logger.info('Killed left over worker %d.' % ident)
+                self.logger.info('Killed left over worker {0}'.format(ident))
             
             with self.irc.lock:
                 context_stale = self.irc.context.get('stale')
@@ -154,7 +158,7 @@ class Bot(object):
                     #self._handle_plugin_messages()
                 self._handle_plugin_messages()
     
-    def _reloader_loop(self, wait=1):
+    def _reloader_loop(self, wait=1.0):
         '''This reloader is based off of the Flask reloader which in turn is 
         based off of the CherryPy reloader.
         
@@ -181,7 +185,7 @@ class Bot(object):
         fnames.extend(iter_module_files())
         self._reloader(fnames, wait=wait)
     
-    def _reloader(self, fnames, wait=1):
+    def _reloader(self, fnames, wait=1.0):
         '''This reloader is based off of the Flask reloader which in turn is 
         based off of the CherryPy reloader.
         
@@ -224,6 +228,47 @@ class Bot(object):
                         mtimes[filename] = mtime
                         
             time.sleep(wait)
+    
+    def _spawn_worker(self):
+        '''TODO'''
+        
+        ident = thread.start_new_thread(self._plugin_worker,
+                                       (self.work_queue, self.return_queue)
+                                       )
+        self.worker_pool.append(ident)
+        return ident
+    
+    def _plugin_worker(self, work_queue, return_queue):
+        ''' Pols the work_queue for jobs, runs them and places the result on the
+        return_queue.
+        '''
+        
+        try:
+            while thread.get_ident() in self.worker_pool:
+                plugin, plugin_context = work_queue.get(True)
+                takes_args = inspect.getargspec(plugin['func']).args
+                
+                action = False
+                if plugin.get('action') == True:
+                    action = True
+                
+                notice = False
+                if plugin.get('notice') == True:
+                    notice = True
+                
+                if takes_args:
+                    message = plugin['func'](plugin_context)
+                else:
+                    message = plugin['func']()
+                return_queue.put((message, plugin_context, action, notice))
+                self.work_queue.task_done()
+        # Catch all exceptions so we can notify the pool we died.
+        except Exception, e:
+            message = 'Error in worker thread, Exiting.'
+            self.logger.error(message)
+            self.logger.error(str(e))
+            self.worker_pool.remove(thread.get_ident())
+            raise e
     
     def command(self, hook=None, **kwargs):
         '''This method provides a decorator that can be used to load a 
@@ -326,44 +371,7 @@ class Bot(object):
         
         while True:
             time.sleep(wait)
-
-
-    def _spawn_worker(self):
-        ident = thread.start_new_thread(self._plugin_worker,
-                                       (self.work_queue, self.return_queue))
-        self.worker_pool.append(ident)
-        return ident
-
-    def _plugin_worker(self, work_queue, return_queue):
-        ''' Pols the work_queue for jobs, runs them and places the result on the
-        return_queue.'''
-        try:
-            while thread.get_ident() in self.worker_pool:
-                plugin, plugin_context = work_queue.get(True)
-                takes_args = inspect.getargspec(plugin['func']).args
-                
-                action = False
-                if plugin.get('action') == True:
-                    action = True
-                
-                notice = False
-                if plugin.get('notice') == True:
-                    notice = True
-                
-                if takes_args:
-                    message = plugin['func'](plugin_context)
-                else:
-                    message = plugin['func']()
-                return_queue.put((message, plugin_context, action, notice))
-                self.work_queue.task_done()
-        # Catch all exceptions so we can notify the pool we died.
-        except Exception, e:
-            message = 'Error in worker thread, Exiting.'
-            self.logger.error(message)
-            self.logger.error(str(e))
-            self.worker_pool.remove(thread.get_ident())
-            raise
-
+    
 
 class TestBot(Bot):
     shutdown = False
