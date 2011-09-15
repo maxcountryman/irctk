@@ -158,7 +158,7 @@ class TcpClient(object):
         
         while True:
             
-            line = self.out.get().splitlines()
+            line = self.out.get(True).splitlines()
             if line:
                 line = line[0]
                 self.out_buffer += line.encode('utf-8', 'replace') + '\r\n'
@@ -214,7 +214,7 @@ class IrcWrapper(object):
         lines = ['NICK ' + self.nick, self.user]
         self._send_lines(lines)
     
-    def _send(self, wait=0.01, rate=3.0, per=60.0):
+    def _send(self, wait=0.1, rate=3.0, per=60.0):
         '''This internal method reads off of `self.out_buffer`, sending the 
         contents to the connection object's output queue.
         
@@ -240,7 +240,7 @@ class IrcWrapper(object):
                     wait_time = 1.0
                 self.connection.out.put(line)
     
-    def _recv(self, wait=0.01):
+    def _recv(self):
         '''This internal method pulls data from the connection's input queue.
         It then places this information in a local input buffer and loops over 
         this buffer, line by line, parsing it via `_parse_line()`.
@@ -258,8 +258,7 @@ class IrcWrapper(object):
         '''
         
         while True:
-            time.sleep(wait)
-            self.inp_buffer += self.connection.inp.get()
+            self.inp_buffer += self.connection.inp.get(True)
             while '\r\n' in self.inp_buffer and not self.connection.shutdown:
                 with self.lock:
                     self.line, self.inp_buffer = self.inp_buffer.split('\r\n', 1)
