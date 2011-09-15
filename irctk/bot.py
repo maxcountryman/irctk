@@ -62,25 +62,6 @@ class Bot(object):
             self.config[plugins] = []
         return self.config[plugins].append(plugin)
     
-    def _send_reply(self, message, context, action=False, line_limit=400):
-        '''TODO'''
-        
-        if context['sender'].startswith('#'):
-            recipient = context['sender']
-        else:
-            recipient = context['user']
-        
-        messages = []
-        def handle_long_message(message):
-            message, extra = message[:line_limit], message[line_limit:]
-            messages.append(message)
-            if extra:
-                handle_long_message(extra)
-        handle_long_message(message)
-        
-        for message in messages:
-            self.irc.send_message(recipient, message, action)
-    
     def _dispatch_plugin(self, plugin, hook, context):
         '''TODO'''
         
@@ -103,7 +84,7 @@ class Bot(object):
                 message = plugin['func']()
             
             if message:
-                return self._send_reply(message, plugin_context.line, action)
+                return self.reply(message, plugin_context.line, action, notice)
     
     def _parse_input(self, prefix='.'):
         '''This internal method handles the parsing of commands and events.
@@ -151,58 +132,6 @@ class Bot(object):
                     
                     # we're done here, context is stale, give us fresh fruit!
                     context_stale = self.irc.context['stale'] = True
-    
-    def command(self, hook=None, **kwargs):
-        '''This method provides a decorator that can be used to load a 
-        function into the global plugins list.:
-        
-        If the `hook` parameter is provided the decorator will assign the hook 
-        key to the value of `hook`, update the `plugin` dict, and then return 
-        the wrapped function to the wrapper.
-        
-        Therein the plugin dictionary is updated with the `func` key whose 
-        value is set to the wrapped function.
-        
-        Otherwise if no `hook` parameter is passed the, `hook` is assumed to 
-        be the wrapped function and handled accordingly.
-        '''
-        
-        plugin = {}
-        
-        def wrapper(f):
-            plugin.setdefault('hook', f.func_name)
-            plugin['func'] = f
-            plugin['help'] = f.__doc__ if f.__doc__ else 'no help provided'
-            self._update_plugins('PLUGINS', plugin)
-            return f
-        
-        if kwargs or not inspect.isfunction(hook):
-            if hook:
-                plugin['hook'] = hook
-            plugin.update(kwargs)
-            return wrapper
-        else:
-            return wrapper(hook)
-    
-    def event(self, hook, **kwargs):
-        '''This method provides a decorator that can be used to load a 
-        function into the global events list.
-        
-        It assumes one parameter, `hook`, i.e. the event you wish to bind 
-        this wrapped function to. For example, JOIN, which would call the 
-        function on all JOIN events.
-        '''
-        
-        plugin = {}
-        
-        def wrapper(f):
-            plugin['func'] = f
-            self._update_plugins('EVENTS', plugin)
-            return f
-        
-        plugin['hook'] = hook
-        plugin.update(kwargs)
-        return wrapper
     
     def _reloader_loop(self, wait=1):
         '''This reloader is based off of the Flask reloader which in turn is 
@@ -274,6 +203,77 @@ class Bot(object):
                         mtimes[filename] = mtime
                         
             time.sleep(wait)
+    
+    def command(self, hook=None, **kwargs):
+        '''This method provides a decorator that can be used to load a 
+        function into the global plugins list.:
+        
+        If the `hook` parameter is provided the decorator will assign the hook 
+        key to the value of `hook`, update the `plugin` dict, and then return 
+        the wrapped function to the wrapper.
+        
+        Therein the plugin dictionary is updated with the `func` key whose 
+        value is set to the wrapped function.
+        
+        Otherwise if no `hook` parameter is passed the, `hook` is assumed to 
+        be the wrapped function and handled accordingly.
+        '''
+        
+        plugin = {}
+        
+        def wrapper(f):
+            plugin.setdefault('hook', f.func_name)
+            plugin['func'] = f
+            plugin['help'] = f.__doc__ if f.__doc__ else 'no help provided'
+            self._update_plugins('PLUGINS', plugin)
+            return f
+        
+        if kwargs or not inspect.isfunction(hook):
+            if hook:
+                plugin['hook'] = hook
+            plugin.update(kwargs)
+            return wrapper
+        else:
+            return wrapper(hook)
+    
+    def event(self, hook, **kwargs):
+        '''This method provides a decorator that can be used to load a 
+        function into the global events list.
+        
+        It assumes one parameter, `hook`, i.e. the event you wish to bind 
+        this wrapped function to. For example, JOIN, which would call the 
+        function on all JOIN events.
+        '''
+        
+        plugin = {}
+        
+        def wrapper(f):
+            plugin['func'] = f
+            self._update_plugins('EVENTS', plugin)
+            return f
+        
+        plugin['hook'] = hook
+        plugin.update(kwargs)
+        return wrapper
+    
+    def reply(self, message, context, action=False, notice=False, line_limit=400):
+        '''TODO'''
+        
+        if context['sender'].startswith('#'):
+            recipient = context['sender']
+        else:
+            recipient = context['user']
+        
+        messages = []
+        def handle_long_message(message):
+            message, extra = message[:line_limit], message[line_limit:]
+            messages.append(message)
+            if extra:
+                handle_long_message(extra)
+        handle_long_message(message)
+        
+        for message in messages:
+            self.irc.send_message(recipient, message, action, notice)
     
     def run(self, wait=0.01):
         

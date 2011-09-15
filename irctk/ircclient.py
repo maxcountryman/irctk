@@ -356,16 +356,18 @@ class IrcWrapper(object):
         
         self._send_lines([command])
     
-    def send_message(self, recipient, message, action=False):
+    def send_message(self, recipient, message, action=False, notice=False):
         '''TODO'''
         
         if action:
             self.send_action(recipient, message)
+        elif notice:
+            self.send_notice(recipient, message)
         else:
             self.send_command('PRIVMSG', [recipient + ' :' + message])
     
     def send_reply(self, message, action=False, line_limit=400):
-        '''TODO'''
+        '''Warning: Deprecated. Use the reply method in bot.py instead.'''
         
         #get context
         

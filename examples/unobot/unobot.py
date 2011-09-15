@@ -83,27 +83,30 @@ def start_uno(context):
     end = 15.0
     time_up = False
     players = []
-    bot._send_reply('Uno game starting. Type .join to play!', context.line)
+    bot.reply('Uno game starting. Type .join to play!', context.line)
     while not time_up:
         if time.time() - start_time >= end:
             time_up = True
             if not players:
-                return 'times up! no players'
+                return 'Time\'s up! No players...'
             else:
-                bot._send_reply('players: ' + ' '.join(players), context.line)
+                bot.reply('Players: ' + ' '.join(players), context.line)
                 deck = create_deck()
                 discard = deck.pop(0)
-                bot._send_reply('Current discard is: ' + get_card_name(discard), context.line)
+                bot.reply('Current discard is: ' + get_card_name(discard), context.line)
                 # start game
-        if ('.join' in bot.irc.context['message']) and not bot.irc.context['user'] in players:
+        message = bot.irc.context['message']
+        if message == '.join':
             user = bot.irc.context['user']
-            players.append(user)
-            bot._send_reply('{0} joined the game'.format(user), context.line)
+            if not user in players: 
+                players.append(user)
+                bot.reply('{0} joined the game'.format(user), context.line)
+            continue
 
 @bot.command
 def raw(context):
     '''usage: .raw <command>'''
-
+    
     if not context.line['prefix'] in bot.config.get('ADMINS'):
         return
     if context.args:
