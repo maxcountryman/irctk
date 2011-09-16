@@ -18,7 +18,7 @@ import thread
 import Queue
 import time
 
-from ssl import wrap_socket
+from ssl import wrap_socket, SSLError
 
 from .logging import create_logger
 
@@ -68,7 +68,7 @@ class TcpClient(object):
         self.out_buffer = ''
         self.shutdown = False
         self.timeout = timeout
-        self.reconnect_on_timeout = True
+        self.reconnect_on_error = True
         socket.setdefaulttimeout(self.timeout)
         self.logger = logger
     
@@ -110,7 +110,10 @@ class TcpClient(object):
         
         self.socket.shutdown(1)
         time.sleep(wait)
-        #self.socket.close() seems to cause a problem, errno 9
+        try:
+            self.socket.close() #seems to cause a problem, errno 9
+        except Exception:
+            pass
     
     def reconnect(self, wait=1.0):
         '''This method will attempt to reconnect to a server. It should be 
@@ -139,8 +142,8 @@ class TcpClient(object):
             try:
                 if not self.shutdown:
                     data = self.socket.recv(byte_size)
-            except socket.timeout:
-                if self.reconnect_on_timeout:
+            except (SSLError, socket.error, socket.timeout):
+                if self.reconnect_on_error:
                     self.logger.error('Connection lost, reconnecting.')
                     self.reconnect(reconnect_wait)
                     self.inp.put('Error :Closing Link:\r\n')
