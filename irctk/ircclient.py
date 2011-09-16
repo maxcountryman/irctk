@@ -18,7 +18,7 @@ import thread
 import Queue
 import time
 
-from ssl import wrap_socket
+from ssl import wrap_socket, SSLError
 
 from .logging import create_logger
 
@@ -140,19 +140,18 @@ class TcpClient(object):
             
             try:
                 data = self.socket.recv(byte_size)
-            except (socket.error, socket.timeout):
+            except (SSLError, socket.error, socket.timeout):
                 self.logger.error('Connection lost, reconnecting.')
                 self.reconnect(wait)
-                wait *= wait
+                #self.inp.put('register internal reconnect\r\n')
+                continue
             
             self.inp_buffer += data
             
             if 'ERROR :Closing link:' in self.inp_buffer:
-                self.logger.info(self.inp_buffer)
                 self.logger.error('Connection lost, reconnecting.')
                 self.reconnect(wait)
-                wait *= wait
-                #self.inp.put('register internal reconnect\r\n')
+                self.inp.put('RECONNECT :server\r\n')
             
             while '\r\n' in self.inp_buffer and not self.shutdown:
                 
@@ -286,13 +285,13 @@ class IrcWrapper(object):
                     
                     if self.command == 'PING':
                         self._send_line('PONG ' + ''.join(self.args))
-                    if self.command == '001' and self.channels:
+                    elif self.command == '001' and self.channels:
                         for channel in self.channels:
                             self._send_line('JOIN ' + channel)
                     elif self.command == '433':
                         self.nick = self.nick + '_'
                         self._send_line('NICK ' + self.nick)
-                    elif self.command == 'register':
+                    elif self.command == 'RECONNECT':
                         self._register()
     
     def _parse_line(self, line):
