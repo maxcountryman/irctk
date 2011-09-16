@@ -9,25 +9,26 @@ bot.config.from_pyfile('settings.cfg')
 
 
 @bot.command
-def raw(args):
-    '''Usage: .raw [command] [args] (admins only)'''
+def raw(context):
+    '''usage: .raw <command>'''
     
-    if not bot.irc.context.get('prefix') in bot.config.get('ADMINS'):
+    if not context.line['prefix'] in bot.config.get('ADMINS'):
         return
-    
-    if args:
-        command = args.split(' ', 1)[0]
-        args = list(args.split(' ', 1)[-1])
+    if context.args:
+        command = context.args.split(' ', 1)[0]
+        args = list(context.args.split(' ', 1)[-1])
         bot.irc.send_command(command, args)
     else:
-        bot.irc.send_reply(raw.__doc__)
+        return raw.__doc__
 
-@bot.command('g', threaded=True)
-def google(query):
+@bot.command('g')
+@bot.command
+def google(context):
     '''Usage .g [query]'''
     
+    query = context.args
     if not query:
-        return bot.irc.send_reply(google.__doc__)
+        return google.__doc__
     
     url = urlparse.urlunsplit(
             (
@@ -44,12 +45,12 @@ def google(query):
     
     if not response:
         error = 'Request error: no results'
-        bot.irc.send_reply(error)
+        return error
     else:
         url = urllib.unquote(response[0]['url'])
         title = response[0]['titleNoFormatting']
         response = title + ' -- ' + url 
-        return bot.irc.send_reply(response)
+        return response
 
 
 if __name__ == '__main__':
