@@ -10,11 +10,42 @@ import sys
 import time
 import inspect
 import thread
+import threading
 import Queue
 import imp
 
 from .config import Config
 from .ircclient import TcpClient, IrcWrapper, IrcTestClient
+
+
+class Worker(threading.Thread):
+    def __init__(self, tasks):
+        threading.Thread.__init__(self)
+        self.tasks = tasks
+        self.daemon = True
+        self.start()
+    
+    def run(self):
+        while True:
+            func, args, kargs = self.tasks.get()
+            try: 
+                func(*args, **kargs)
+            except Exception:
+                pass
+            self.tasks.task_done()
+
+
+class ThreadPool(object):
+    def __init__(self, workers):
+        self.tasks = Queue.Queue(workers)
+        
+        #spawn workers
+        for worker in range(workers): 
+            Worker(self.tasks)
+    
+    def enqueue_task(self, func, *args, **kwargs):
+        task = (func, args, kwargs)
+        self.tasks.put(task)
 
 
 class Context(object):
@@ -44,7 +75,6 @@ class Bot(object):
         'EVENTS': [],
         'MAX_WORKERS': 7,
         'MIN_WORKERS': 3,
-        'WORKERS': 5,
         })
     
     def __init__(self):
@@ -72,43 +102,18 @@ class Bot(object):
         return self.config[plugins].append(plugin)
     
     def _enqueue_plugin(self, plugin, hook, context):
-        '''This internal method takes three arguments, `plugin`, `hook`, and 
-        `context`. The method will then check to see if the hook, `hook` is 
-        the context or the context begins with the hook plus a space, i.e. 
-        called with arguments.
-        
-        A local copy of the context is made and stored in an instance of the 
-        `Context` class.
-        
-        Finally the the above conditions are met, a plugin is found to be 
-        called, then it is put in the job queue, `self.job_queue`, where it 
-        will wait for execution.
-        
-        TODO: predetermine whether a plugin takes arguments or not, that 
-        should happen here not later.
-        '''
+        '''TODO'''
         
         if context == hook or context.startswith(hook + ' '):
             plugin_args = plugin['context']['message'].split(hook, 1)[-1].strip()
             plugin_context = Context(plugin['context'], plugin_args)
             
-            plugin = (plugin, plugin_context)
-            self.job_queue.put(plugin)
+            self.thread_pool.enqueue_task(self._dequeue_plugin, plugin, plugin_context)
+            #self.job_queue.put(plugin)
     
-    def _dequeue_plugin(self):
-        '''This internal method takes no arguments. It looks for `thread` 
-        identifiers in the `self.worker_pool` list. While these exist, it 
-        extracts the plugin and plugin context from `self.job_queue`.
-        
-        The method then further processes the plugin to determine its proper 
-        formatting.
-        
-        Finally the plugin is added to the dispatcher queue, 
-        `self.dispatch_qeueue` and `self.job_queue.task_done()` is called.
-        '''
-        
-        plugin, plugin_context = self.job_queue.get(block=True)
-        
+    def _dequeue_plugin(self, plugin, plugin_context):
+        '''TODO'''
+         
         takes_args = inspect.getargspec(plugin['func']).args
         
         action = False
@@ -124,55 +129,8 @@ class Bot(object):
         else:
             message = plugin['func']()
         
-        plugin = (message, plugin_context, action, notice)    
-        self.dispatch_queue.put(plugin)
-        self.job_queue.task_done()
-    
-    def _handle_dequeue_result(self):
-        '''TODO'''
-        
-        while not self.dispatch_queue.empty():
-            message, plugin_context, action, notice = self.dispatch_queue.get()
-            if message:
-                self.reply(message, plugin_context.line, action, notice)
-    
-    def _set_worker_pool(self):
-        '''TODO'''
-        
-        max_workers = self.config['MAX_WORKERS']
-        min_workers = self.config['MIN_WORKERS']
-        
-        if not self.job_queue.empty():
-            needs_workers = len(self.worker_pool) > min_workers
-            more_workers_ok = self.total_workers < max_workers
-            
-            while needs_workers and more_workers_ok:
-                self.total_workers += 1
-                                
-                _id = self._spawn_worker()
-                spawning = 'Spawning worker {0}; too few workers'.format(_id)
-                self.logger.info(spawning)
-                
-                more_workers_ok = self.total_workers < max_workers
-            
-        #while not self.job_queue.empty() and pool_length < max_workers:
-        #    self.total_workers += 1
-        #    ident = self._spawn_worker()
-        #    spawning = 'Spawning worker {0}'.format(ident)
-        #    self.logger.info(spawning)
-        #
-        #if self.job_queue.all_tasks_done.acquire(0):
-        #    self.job_queue.all_tasks_done.release()
-        #    if pool_length > self.total_workers:
-        #        self.idle_workers += 1
-        #        idlers = 'We have {0} idle workers.'.format(self.idle_workers)
-        #        self.logger.info(idlers)
-        #
-        #if self.idle_workers > self.total_workers:
-        #    _id = self.worker_pool.pop(0)
-        #    self.idle_workers -= 1
-        #    self.logger.info('Killing idle worker {0}'.format(_id))
-        
+        if message:
+            self.reply(message, plugin_context.line, action, notice)
     
     def _parse_input(self, prefix='.'):
         '''This internal method handles the parsing of commands and events.
@@ -193,8 +151,6 @@ class Bot(object):
         while True:
             time.sleep(0.01)
             
-            thread.start_new_thread(self._set_worker_pool, ())
-            
             with self.irc.lock:
                 context_stale = self.irc.context.get('stale')
                 args = self.irc.context.get('args')
@@ -203,7 +159,7 @@ class Bot(object):
                 while not context_stale and args:
                     if message.startswith(prefix):
                         for plugin in self.config['PLUGINS']:
-                            plugin['context'] = self.irc.context # set context
+                            plugin['context'] = self.irc.context
                             hook = prefix + plugin['hook']
                             try:
                                 self._enqueue_plugin(plugin, hook, message)
@@ -215,16 +171,13 @@ class Bot(object):
                             event['context'] = self.irc.context
                             hook = event['hook']
                             try:
-                                self._enqueue_plugin, (event, hook, command)
+                                self._enqueue_plugin(event, hook, command)
                             except Exception, e:
                                 self.logger.error(str(e))
                                 continue
                     
                     # we're done here, context is stale, give us fresh fruit!
                     context_stale = self.irc.context['stale'] = True
-                
-                # Finaly handle messages returned from the plugins.
-                self._handle_dequeue_result()
     
     def _reloader_loop(self, wait=1.0):
         '''This reloader is based off of the Flask reloader which in turn is 
@@ -296,19 +249,6 @@ class Bot(object):
                         mtimes[filename] = mtime
                         
             time.sleep(wait)
-    
-    def _spawn_worker(self):
-        '''This internal method takes no arguments. It spawns 
-        `self_dequeue_plugin` in a new thread.
-        
-        Returns the thread identifier.
-        '''
-        
-        _id = thread.start_new_thread(self._dequeue_plugin, ())
-        
-        self.worker_pool.append(_id)
-        
-        return _id
     
     def command(self, hook=None, **kwargs):
         '''This method provides a decorator that can be used to load a 
@@ -399,9 +339,7 @@ class Bot(object):
         
         self.logger = self.connection.logger
         
-        # Set the worker thread pool up.
-        for worker in range(self.config['WORKERS']):
-            self._spawn_worker()
+        self.thread_pool = ThreadPool(self.config['MIN_WORKERS'])
         
         self.connection.connect()
         self.irc.run()
