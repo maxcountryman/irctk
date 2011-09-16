@@ -10,42 +10,12 @@ import sys
 import time
 import inspect
 import thread
-import threading
 import Queue
 import imp
 
 from .config import Config
+from .threadpool import ThreadPool
 from .ircclient import TcpClient, IrcWrapper, IrcTestClient
-
-
-class Worker(threading.Thread):
-    def __init__(self, tasks):
-        threading.Thread.__init__(self)
-        self.tasks = tasks
-        self.daemon = True
-        self.start()
-    
-    def run(self):
-        while True:
-            func, args, kargs = self.tasks.get()
-            try: 
-                func(*args, **kargs)
-            except Exception:
-                pass
-            self.tasks.task_done()
-
-
-class ThreadPool(object):
-    def __init__(self, workers):
-        self.tasks = Queue.Queue(workers)
-        
-        #spawn workers
-        for worker in range(workers): 
-            Worker(self.tasks)
-    
-    def enqueue_task(self, func, *args, **kwargs):
-        task = (func, args, kwargs)
-        self.tasks.put(task)
 
 
 class Context(object):
@@ -109,7 +79,7 @@ class Bot(object):
             plugin_context = Context(plugin['context'], plugin_args)
             
             self.thread_pool.enqueue_task(self._dequeue_plugin, plugin, plugin_context)
-            #self.job_queue.put(plugin)
+            #self._dequeue_plugin(plugin, plugin_context)
     
     def _dequeue_plugin(self, plugin, plugin_context):
         '''TODO'''
@@ -339,7 +309,7 @@ class Bot(object):
         
         self.logger = self.connection.logger
         
-        self.thread_pool = ThreadPool(self.config['MIN_WORKERS'])
+        self.thread_pool = ThreadPool(self.config['MIN_WORKERS'], self.logger)
         
         self.connection.connect()
         self.irc.run()
