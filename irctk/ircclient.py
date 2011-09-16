@@ -18,7 +18,7 @@ import thread
 import Queue
 import time
 
-from ssl import wrap_socket, SSLError
+from ssl import wrap_socket
 
 from .logging import create_logger
 
@@ -68,6 +68,7 @@ class TcpClient(object):
         self.out_buffer = ''
         self.shutdown = False
         self.timeout = timeout
+        self.reconnect_on_timeout = True
         socket.setdefaulttimeout(self.timeout)
         self.logger = logger
     
@@ -109,7 +110,7 @@ class TcpClient(object):
         
         self.socket.shutdown(1)
         time.sleep(wait)
-        self.socket.close()
+        #self.socket.close() seems to cause a problem, errno 9
     
     def reconnect(self, wait=1.0):
         '''This method will attempt to reconnect to a server. It should be 
@@ -124,34 +125,31 @@ class TcpClient(object):
         '''
         
         try:
-            try:
-                self.close()
-            except Exception, e:
-                self.logger.debug('exception while closing old socket: ' + str(e))
-            time.sleep(wait)
-            self.connect(reconnect=True)
+            self.close()
         except Exception, e:
-            self.logger.debug('exception during reconnect: ' + str(e))
+            self.logger.debug('exception while closing old socket: ' + str(e))
+        time.sleep(wait)
+        self.connect(reconnect=True)
     
-    def _recv(self, wait=5.0, byte_size=4096):
+    def _recv(self, reconnect_wait=5.0, byte_size=4096):
         '''Internal method that processes incoming data.'''
         
         while True:
             
             try:
-                data = self.socket.recv(byte_size)
-            except (SSLError, socket.error, socket.timeout):
-                self.logger.error('Connection lost, reconnecting.')
-                self.reconnect(wait)
-                #self.inp.put('register internal reconnect\r\n')
-                continue
+                if not self.shutdown:
+                    data = self.socket.recv(byte_size)
+            except socket.timeout:
+                if self.reconnect_on_timeout:
+                    self.logger.error('Connection lost, reconnecting.')
+                    self.reconnect(reconnect_wait)
+                    self.inp.put('Error :Closing Link:\r\n')
+                    reconnect_wait *= reconnect_wait
+                    continue
+                else:
+                    self.close()
             
             self.inp_buffer += data
-            
-            if 'ERROR :Closing link:' in self.inp_buffer:
-                self.logger.error('Connection lost, reconnecting.')
-                self.reconnect(wait)
-                self.inp.put('RECONNECT :server\r\n')
             
             while '\r\n' in self.inp_buffer and not self.shutdown:
                 
@@ -245,7 +243,7 @@ class IrcWrapper(object):
                     wait_time = wait_base
                 self.connection.out.put(line)
     
-    def _recv(self):
+    def _recv(self, reconnect_wait=5.0):
         '''This internal method pulls data from the connection's input queue.
         It then places this information in a local input buffer and loops over 
         this buffer, line by line, parsing it via `_parse_line()`.
@@ -282,6 +280,12 @@ class IrcWrapper(object):
                         'message': self.message if self.args else '',
                         'stale': False,
                         }
+                    
+                    if 'ERROR :Closing link:' in self.line:
+                        self.connection.logger.error('Connection lost, reconnecting.')
+                        self.connection.reconnect(reconnect_wait)
+                        self.connection.inp.put('RECONNECT :server\r\n')
+                        reconnect_wait *= reconnect_wait
                     
                     if self.command == 'PING':
                         self._send_line('PONG ' + ''.join(self.args))
