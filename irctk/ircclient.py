@@ -264,7 +264,7 @@ class IrcWrapper(object):
         '''
         
         while True:
-            self.inp_buffer += self.connection.inp.get(True)
+            self.inp_buffer += self.connection.inp.get()
             while '\r\n' in self.inp_buffer and not self.connection.shutdown:
                 with self.lock:
                     self.line, self.inp_buffer = self.inp_buffer.split('\r\n', 1)
