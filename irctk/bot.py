@@ -69,7 +69,13 @@ class Bot(object):
         
         if not self.config.get(plugin_list):
             self.config[plugin_list] = []
-        return self.config[plugin_list].append(plugin)
+        
+        for i, existing_plugin in enumerate(self.config[plugin_list]):
+            if existing_plugin['func'].__name__ == plugin['func'].__name__:
+                self.config[plugin_list][i] = plugin
+        
+        if not plugin in self.config[plugin_list]:
+            self.config[plugin_list].append(plugin)
     
     def _enqueue_plugin(self, plugin, hook, context):
         '''This internal method takes a plugin, hook, and context, as 
@@ -214,7 +220,8 @@ class Bot(object):
             for filename in fnames:
                 try:
                     mtime = os.stat(filename).st_mtime
-                except OSError:
+                except OSError, e:
+                    self.logger.error('Reloader error: {0}'.format(e))
                     continue
                 
                 old_time = mtimes.get(filename)
