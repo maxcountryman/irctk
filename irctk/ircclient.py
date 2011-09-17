@@ -59,9 +59,9 @@ class TcpClient(object):
     '''
     
     def __init__(self, host, port, ssl=False, timeout=300.0):
-        self.ssl = ssl
         self.host = host
         self.port = port
+        self.ssl = ssl
         self.inp = Queue.Queue()
         self.out = Queue.Queue()
         self.inp_buffer = ''
