@@ -2,7 +2,7 @@ import unittest
 import inspect
 import thread
 
-from kaa.bot import TestBot
+from irctk.bot import TestBot
 
 
 class TestSettings(object):
@@ -83,3 +83,7 @@ class ClientTestCase(unittest.TestCase):
     
     def test_run_client(self):
         pass
+
+
+if __name__ == '__main__':
+    unittest.main()
