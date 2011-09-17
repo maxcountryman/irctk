@@ -6,14 +6,6 @@ import random
 bot = Bot()
 bot.config.from_pyfile('settings.cfg')
 
-@bot.command
-def test(context):
-    if context.args:
-        bot.reply(str(context.args), context.line)
-        return str(context.line)
-    else:
-        return str(context.line)
-
 def create_deck():
     red_cards = ['r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7', 'r8', 'r9'] * 2 + ['r0']
     blue_cards = ['b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7', 'b8', 'b9'] * 2 + ['b0']

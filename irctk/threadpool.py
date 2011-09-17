@@ -23,6 +23,7 @@ class Worker(threading.Thread):
     def __init__(self, tasks, logger):
         threading.Thread.__init__(self)
         self.tasks = tasks
+        self.logger = logger
         self.daemon = True
         self.start()
     
@@ -56,6 +57,7 @@ class ThreadPool(threading.Thread):
         self.number_of_workers = 0
         self.logger = logger
         self.wait = wait
+        self.daemon = True
         self.start()
         
     def enqueue_task(self, func, *args, **kwargs):
@@ -70,8 +72,7 @@ class ThreadPool(threading.Thread):
             time.sleep(self.wait)
             
             for worker in range(self.workers):
-                self.number_of_workers += 1
                 
                 if self.number_of_workers < self.max_workers:
+                    self.number_of_workers += 1
                     self.worker() # spawn a worker
-

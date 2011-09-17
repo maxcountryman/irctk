@@ -59,30 +59,46 @@ class Bot(object):
             cls._instance = super(Bot, cls).__new__(cls, *args, **kwargs)
         return cls._instance
     
-    def _update_plugins(self, plugins, plugin):
+    def _update_plugins(self, plugin_list, plugin):
         '''This internal method updates a given list containing plugins, 
-        `plugins`, with a plugin dictionary object, `plugin`.
+        `plugin_list`, with a plugin dictionary object, `plugin`.
         
-        Usually used to update the PLUGINS or EVENTS list in the configuration 
-        object.
+        Usually used to update the `PLUGINS` or `EVENTS` list in the 
+        configuration dict.
         '''
         
-        if not self.config.get(plugins):
-            self.config[plugins] = []
-        return self.config[plugins].append(plugin)
+        if not self.config.get(plugin_list):
+            self.config[plugin_list] = []
+        return self.config[plugin_list].append(plugin)
     
     def _enqueue_plugin(self, plugin, hook, context):
-        '''TODO'''
+        '''This internal method takes a plugin, hook, and context, as 
+        `plugin`, `hook`, and `context`. Checking to see if the context is 
+        equivalent to the hook or begins with the hook plus a space, in the 
+        second case, indicating a plugin passed with arguments. If such 
+        conditions are met the plugin is enqueued in the thread pool.
+        '''
         
         if context == hook or context.startswith(hook + ' '):
             plugin_args = plugin['context']['message'].split(hook, 1)[-1].strip()
             plugin_context = Context(plugin['context'], plugin_args)
             
-            self.thread_pool.enqueue_task(self._dequeue_plugin, plugin, plugin_context)
+            task = (self._dequeue_plugin, plugin, plugin_context)
+            self.thread_pool.enqueue_task(*task)
             #self._dequeue_plugin(plugin, plugin_context)
     
     def _dequeue_plugin(self, plugin, plugin_context):
-        '''TODO'''
+        '''This internal method assumes that a plugin and plugin context are 
+        passed to it as `plugin` and `plugin_context`. It is intended to be 
+        called as a plugin is being dequeued, i.e. from a thread pool as 
+        called by a worker thread thereof. 
+        
+        The plugin and plugin context are checked against several conditions 
+        that will ultimately affect the formatting of the final message.
+        
+        if the plugin function does return a message, that message is 
+        formatted and sent back to the server via `cls.reply`.
+        '''
          
         takes_args = inspect.getargspec(plugin['func']).args
         
