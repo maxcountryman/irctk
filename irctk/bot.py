@@ -118,7 +118,7 @@ class Bot(object):
         if message:
             self.reply(message, plugin_context.line, action, notice)
     
-    def _parse_input(self, prefix='.'):
+    def _parse_input(self, prefix='.', wait=0.01):
         '''This internal method handles the parsing of commands and events.
         Hooks for commands are prefixed with a character, by default `.`. This 
         may be overriden by specifying `prefix`.
@@ -135,14 +135,14 @@ class Bot(object):
         '''
         
         while True:
-            time.sleep(0.01)
+            time.sleep(wait)
             
             with self.irc.lock:
-                context_stale = self.irc.context.get('stale')
+                context_stale = lambda : self.irc.context.get('stale')
                 args = self.irc.context.get('args')
                 command = self.irc.context.get('command')
                 message = self.irc.context.get('message')
-                while not context_stale and args:
+                while not context_stale() and args:
                     if message.startswith(prefix):
                         for plugin in self.config['PLUGINS']:
                             plugin['context'] = dict(self.irc.context)
@@ -163,7 +163,7 @@ class Bot(object):
                                 continue
                     
                     # we're done here, context is stale, give us fresh fruit!
-                    context_stale = self.irc.context['stale'] = True
+                    self.irc.context['stale'] = True
     
     def _reloader_loop(self, wait=1.0):
         '''This reloader is based off of the Flask reloader which in turn is 
