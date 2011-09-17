@@ -20,6 +20,7 @@ class IrcWrapperCase(unittest.TestCase):
     
     def setUp(self):
         self.conn = Queue.Queue()
+        self.conn.out = ''
         self.wrapper = IrcWrapper(self.conn, 'test', 'tester', ['#test'])
         self.assertTrue(self.wrapper.nick == 'test')
         self.assertTrue(self.wrapper.realname == 'tester')
@@ -27,9 +28,11 @@ class IrcWrapperCase(unittest.TestCase):
     
     def test_register(self):
         self.wrapper._register()
-        nick = 'NICK test'
-        user = 'USER test 3 * tester'
+        nick = 'NICK test\r\n'
+        user = 'USER test 3 * tester\r\n'
         self.assertTrue((nick and user) in self.wrapper.out_buffer)
+        self.assertEqual(nick, self.wrapper.out_buffer.split('\r\n')[0] + '\r\n')
+        self.assertEqual(user, self.wrapper.out_buffer.split('\r\n')[1] + '\r\n')
     
     def test_send(self):
         pass
