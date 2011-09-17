@@ -49,9 +49,9 @@ class ThreadPool(threading.Thread):
     Inherits from `threading.Thread`.
     '''
     
-    def __init__(self, workers, logger, max_workers=11, wait=0.1):
+    def __init__(self, workers, logger, max_workers=11, wait=0.01):
         threading.Thread.__init__(self)
-        self.tasks = Queue.Queue(workers)
+        self.tasks = Queue.Queue()
         self.workers = workers
         self.max_workers = max_workers
         self.number_of_workers = 0
@@ -71,17 +71,17 @@ class ThreadPool(threading.Thread):
         while True:
             time.sleep(self.wait)
             
-            for worker in range(self.workers):
-                
-                if self.number_of_workers < self.workers:
-                    self.number_of_workers += 1
-                    self.worker() # spawn a worker
-                
-                more_workers_ok = lambda : self.number_of_workers < self.max_workers
-                if not self.tasks.empty() and more_workers_ok():
-                    self.number_of_workers += 1
-                    self.worker()
-                
-                too_many_workers = lambda : self.number_of_workers > self.workers
-                if self.tasks.empty() and too_many_workers():
-                    self.number_of_workers -= 1
+            too_few_workers = lambda : self.number_of_workers < self.workers
+            more_workers_ok = lambda : self.number_of_workers < self.max_workers
+            too_many_workers = lambda : self.number_of_workers > self.workers
+            
+            if too_few_workers():
+                self.number_of_workers += 1
+                self.worker() # spawn a worker
+            
+            if not self.tasks.empty() and more_workers_ok():
+                self.number_of_workers += 1
+                self.worker()
+            
+            if self.tasks.empty() and too_many_workers():
+                self.number_of_workers -= 1
