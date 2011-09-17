@@ -145,7 +145,7 @@ class Bot(object):
                 while not context_stale and args:
                     if message.startswith(prefix):
                         for plugin in self.config['PLUGINS']:
-                            plugin['context'] = self.irc.context
+                            plugin['context'] = dict(self.irc.context)
                             hook = prefix + plugin['hook']
                             try:
                                 self._enqueue_plugin(plugin, hook, message)
@@ -154,7 +154,7 @@ class Bot(object):
                                 continue
                     if command and command.isupper():
                         for event in self.config['EVENTS']:
-                            event['context'] = self.irc.context
+                            event['context'] = dict(self.irc.context)
                             hook = event['hook']
                             try:
                                 self._enqueue_plugin(event, hook, command)
