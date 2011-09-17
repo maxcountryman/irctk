@@ -41,23 +41,60 @@ class IrcWrapperCase(unittest.TestCase):
         pass
     
     def test_parse_line(self):
-        pass
+        line = 'PRIVMSG #testing :test message'
+        prefix, command, args = self.wrapper._parse_line(line)
+        self.assertEqual(prefix, '')
+        self.assertEqual(command, 'PRIVMSG')
+        self.assertEqual(args, ['#testing', 'test message'])
+        
+        line = ':server.example.net NOTICE Auth :*** Looking up your hostname...'
+        prefix, command, args = self.wrapper._parse_line(line)
+        self.assertEqual(prefix, 'server.example.net')
+        self.assertEqual(command, 'NOTICE')
+        self.assertEqual(args, ['Auth', '*** Looking up your hostname...'])
     
     def test_send_line(self):
-        pass
+        line = 'test'
+        self.wrapper._send_line(line)
+        self.assertEqual('test\r\n', self.wrapper.out_buffer)
     
     def test_send_lines(self):
-        pass
+        lines = ['foo', 'bar', 'baz']
+        expected_result = 'foo\r\nbar\r\nbaz\r\n'
+        self.wrapper._send_lines(lines)
+        self.assertEqual(expected_result, self.wrapper.out_buffer)
     
     def test_run(self):
         pass
     
     def test_send_command(self):
-        pass
+        command = 'PRIVMSG'
+        args = ['#test' + ' :' + 'test']
+        expected_result = 'PRIVMSG #test :test\r\n'
+        self.wrapper.send_command(command, args)
+        self.assertEqual(expected_result, self.wrapper.out_buffer)
     
     def test_send_message(self):
-        pass
-    
+        recipient = '#test'
+        message = 'test'
+        expected_result = 'PRIVMSG #test :test\r\n'
+        self.wrapper.send_message(recipient, message)
+        self.assertEqual(expected_result, self.wrapper.out_buffer)
+        self.wrapper.out_buffer = ''
+        
+        recipient = '#test'
+        message = 'dances'
+        expected_result = 'PRIVMSG #test :\x01ACTION dances\x01\r\n'
+        self.wrapper.send_message(recipient, message, action=True)
+        self.assertEqual(expected_result, self.wrapper.out_buffer)
+        self.wrapper.out_buffer = ''
+        
+        recipient = '#test'
+        message = 'attention!'
+        expected_result = 'NOTICE #test :attention!\r\n'
+        self.wrapper.send_message(recipient, message, notice=True)
+        self.assertEqual(expected_result, self.wrapper.out_buffer)
+        
     def test_send_notice(self):
         pass
     
