@@ -59,7 +59,57 @@ class Bot(object):
             cls._instance = super(Bot, cls).__new__(cls, *args, **kwargs)
         return cls._instance
     
-    def _update_plugins(self, plugin_list, plugin):
+    def _add_plugin(self, hook, func, command=True, event=False):
+        '''TODO'''
+        
+        plugin = {}
+        
+        plugin.setdefault('hook', hook)
+        plugin['funcs'] = [func]
+        plugin['help'] = func.__doc__ if func.__doc__ else 'no help provided'
+        
+        if event:
+            command = False # don't process as a command and an event
+            plugin_list = 'EVENTS'
+        
+        if command:
+            plugin_list = 'PLUGINS'
+        
+        self._update_plugins(plugin, plugin_list)
+        
+    def _remove_plugin(self, hook, func, command=True, event=False):
+        '''TODO'''
+        
+        if event:
+            command = False
+            plugin_list = 'EVENTS'
+        
+        if command:
+            plugin_list = 'PLUGINS'
+        
+        plugin_list = self.config[plugin_list]
+        
+        hook_found = lambda : hook == existing_plugin['hook']
+        func_found = lambda : func in existing_plugin['funcs']
+        
+        for existing_plugin in plugin_list:
+            if hook_found() and func_found():
+                existing_plugin['funcs'].remove(func)
+                
+                if not existing_plugin['funcs']:
+                    plugin_list.remove(existing_plugin)
+    
+    def _reset_plugins(self):
+        '''This internal method resets the plugin lists in order to ensure 
+        that our application only uses the most recent plugins as defined by 
+        the application source, i.e. if a plugin is removed this change will 
+        be reflected by resetting the lists and repopulating them.
+        '''
+        
+        self.config['PLUGINS'] = []
+        self.config['EVENTS'] = []
+    
+    def _update_plugins(self, plugin, plugin_list):
         '''This internal method updates a given list containing plugins, 
         `plugin_list`, with a plugin dictionary object, `plugin`.
         
@@ -70,12 +120,21 @@ class Bot(object):
         if not self.config.get(plugin_list):
             self.config[plugin_list] = []
         
-        for i, existing_plugin in enumerate(self.config[plugin_list]):
-            if existing_plugin['func'].__name__ == plugin['func'].__name__:
-                self.config[plugin_list][i] = plugin
+        plugin_list = self.config[plugin_list]
         
-        if not plugin in self.config[plugin_list]:
-            self.config[plugin_list].append(plugin)
+        for i, existing_plugin in enumerate(plugin_list):
+            if plugin == existing_plugin:
+                plugin_list[i] = plugin
+        
+        if not plugin in plugin_list:
+            plugin_list.append(plugin)
+        
+        #for i, existing_plugin in enumerate(self.config[plugin_list]):
+        #    if existing_plugin['func'].__name__ == plugin['func'].__name__:
+        #        self.config[plugin_list][i] = plugin
+        
+        #if not plugin in self.config[plugin_list]:
+        #self.config[plugin_list].append(plugin)
     
     def _enqueue_plugin(self, plugin, hook, context):
         '''This internal method takes a plugin, hook, and context, as 
@@ -105,24 +164,25 @@ class Bot(object):
         if the plugin function does return a message, that message is 
         formatted and sent back to the server via `cls.reply`.
         '''
-         
-        takes_args = inspect.getargspec(plugin['func']).args
         
-        action = False
-        if plugin.get('action') == True:
-            action = True
-        
-        notice = False
-        if plugin.get('notice') == True:
-            notice = True
-        
-        if takes_args:
-            message = plugin['func'](plugin_context)
-        else:
-            message = plugin['func']()
-        
-        if message:
-            self.reply(message, plugin_context.line, action, notice)
+        for func in plugin['funcs']:
+            takes_args = inspect.getargspec(func).args
+            
+            action = False
+            if plugin.get('action') == True:
+                action = True
+            
+            notice = False
+            if plugin.get('notice') == True:
+                notice = True
+            
+            if takes_args:
+                message = func(plugin_context)
+            else:
+                message = func()
+            
+            if message:
+                self.reply(message, plugin_context.line, action, notice)
     
     def _parse_input(self, prefix='.', wait=0.01):
         '''This internal method handles the parsing of commands and events.
@@ -169,9 +229,9 @@ class Bot(object):
                                 continue
                     
                     # we're done here, context is stale, give us fresh fruit!
-                    self.irc.context['stale'] = True
+                    self.irc.context['stale'] = True    
     
-    def _reloader_loop(self, wait=1.0):
+    def _reloader_loop(self, callback, wait=1.0):
         '''This reloader is based off of the Flask reloader which in turn is 
         based off of the CherryPy reloader.
         
@@ -196,9 +256,9 @@ class Bot(object):
         
         fnames = []
         fnames.extend(iter_module_files())
-        self._reloader(fnames, wait=wait)
+        self._reloader(fnames, callback, wait=wait)
     
-    def _reloader(self, fnames, wait=1.0):
+    def _reloader(self, fnames, callback, wait=1.0):
         '''This reloader is based off of the Flask reloader which in turn is 
         based off of the CherryPy reloader.
         
@@ -209,6 +269,9 @@ class Bot(object):
         
         The `fnames` parameter should be a list of files names to be parsed by 
         the reloader.
+        
+        A callback function, `callback` may be provided as a function to be 
+        called when the file is reloaded.
         
         The `wait` parameter specifies the time in seconds to run 
         `time.sleep()`.
@@ -231,6 +294,8 @@ class Bot(object):
                     mtimes[filename] = mtime
                     
                     self.logger.info('Changes detected; reloading {0}'.format(filename))
+                    
+                    callback()
                     
                     f = filename.split('/')[-1].split('.')[0]
                     try:
@@ -260,12 +325,12 @@ class Bot(object):
         
         plugin = {}
         
-        def wrapper(f):
-            plugin.setdefault('hook', f.func_name)
-            plugin['func'] = f
-            plugin['help'] = f.__doc__ if f.__doc__ else 'no help provided'
-            self._update_plugins('PLUGINS', plugin)
-            return f
+        def wrapper(func):
+            plugin.setdefault('hook', func.func_name)
+            plugin['funcs'] = [func]
+            plugin['help'] = func.__doc__ if func.__doc__ else 'no help provided'
+            self._update_plugins(plugin, 'PLUGINS')
+            return func
         
         if kwargs or not inspect.isfunction(hook):
             if hook:
@@ -286,14 +351,34 @@ class Bot(object):
         
         plugin = {}
         
-        def wrapper(f):
-            plugin['func'] = f
-            self._update_plugins('EVENTS', plugin)
-            return f
+        def wrapper(func):
+            plugin['funcs'] = [func]
+            self._update_plugins(plugin, 'EVENTS')
+            return func
         
         plugin['hook'] = hook
         plugin.update(kwargs)
         return wrapper
+    
+    def add_command(self, hook, func):
+        '''TODO'''
+        
+        self._add_plugin(hook, func, command=True)
+    
+    def add_event(self, hook, func):
+        '''TODO'''
+        
+        self._add_plugin(hook, func, event=True)
+    
+    def remove_command(self, hook, func):
+        '''TODO'''
+        
+        self._remove_plugin(hook, func, command=True)
+    
+    def remove_event(self, hook, func):
+        '''TODO'''
+        
+        self._remove_plugin(hook, func, event=True)
     
     def reply(self, message, context, action=False, notice=False, line_limit=400):
         '''TODO'''
@@ -304,11 +389,13 @@ class Bot(object):
             recipient = context['user']
         
         messages = []
+        
         def handle_long_message(message):
             message, extra = message[:line_limit], message[line_limit:]
             messages.append(message)
             if extra:
                 handle_long_message(extra)
+        
         handle_long_message(message)
         
         for message in messages:
@@ -338,7 +425,7 @@ class Bot(object):
         self.irc.run()
         
         thread.start_new_thread(self._parse_input, ())
-        thread.start_new_thread(self._reloader_loop, ())
+        thread.start_new_thread(self._reloader_loop, (self._reset_plugins,))
         
         while True:
             time.sleep(wait)
@@ -362,4 +449,3 @@ class TestBot(Bot):
         
         while not self.shutdown:
             time.sleep(0.01)
-
