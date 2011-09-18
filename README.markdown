@@ -89,10 +89,10 @@ state:
         '''
         
         if context.args: # if the plugin was called with argument variables
-            bot.reply(context.args) # show those arguments
-            return context.line     # show us the parsed line
+            bot.reply(context.args, context.line) # show those arguments
+            return str(context.line)              # show us the parsed line
         else:
-            return context.line
+            return str(context.line)
 
 In the above example, `bot.reply` is a special method of the bot instance which
 will automatically format a reply to the correct recipient, i.e. either a user
