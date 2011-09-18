@@ -4,7 +4,7 @@ import Queue
 from irctk.ircclient import TcpClient, IrcWrapper
 
 
-class ConnTestCase(unittest.TestCase):
+class TcpClientTestCase(unittest.TestCase):
     '''This test case is used to test the TCP client methods.'''
     
     def setUp(self):
@@ -15,7 +15,7 @@ class ConnTestCase(unittest.TestCase):
         self.assertFalse(self.conn.shutdown)
 
 
-class IrcWrapperCase(unittest.TestCase):
+class IrcWrapperTestCase(unittest.TestCase):
     '''This test case is used to test the IRC wrapper methods.'''
     
     def setUp(self):
