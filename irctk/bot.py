@@ -128,8 +128,8 @@ class Bot(object):
                 #plugin_list[i]['help'] = plugin['help']
         
         def iter_list_hooks():
-            for plugin in plugin_list:
-                yield plugin['hook']
+            for existing_plugin in plugin_list:
+                yield existing_plugin['hook']
         
         if not plugin['hook'] in iter_list_hooks():
             plugin_list.append(plugin)
