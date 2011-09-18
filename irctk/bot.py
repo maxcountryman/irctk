@@ -123,10 +123,15 @@ class Bot(object):
         plugin_list = self.config[plugin_list]
         
         for i, existing_plugin in enumerate(plugin_list):
-            if plugin == existing_plugin:
-                plugin_list[i] = plugin
+            if plugin['hook'] == existing_plugin['hook']:
+                plugin_list[i]['funcs'] += plugin['funcs']
+                #plugin_list[i]['help'] = plugin['help']
         
-        if not plugin in plugin_list:
+        def iter_list_hooks():
+            for plugin in plugin_list:
+                yield plugin['hook']
+        
+        if not plugin['hook'] in iter_list_hooks():
             plugin_list.append(plugin)
         
         #for i, existing_plugin in enumerate(self.config[plugin_list]):
