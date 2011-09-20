@@ -8,15 +8,18 @@ class BotTestCase(unittest.TestCase):
     
     def setUp(self):
         self.bot = Bot()
+        self.assertNotEquals(self.bot._instance, None)
+        #self.assertTrue(isinstance(self.bot, None))
+        self.assertTrue(self.bot.root_path)
+        self.assertTrue(self.bot.logger)
+        self.assertTrue(self.bot.default_config)
+        self.assertTrue(self.bot.config)
+        self.assertTrue(self.bot.plugin)
     
-    def test_update_plugins(self):
-        pass
-    
-    def test_enqueue_plugin(self):
-        pass
-    
-    def test_dequeue_plugin(self):
-        pass
+    def test_create_connection(self):
+        self.bot._create_connection()
+        self.assertTrue(self.bot.connection)
+        self.assertTrue(self.bot.irc)
     
     def test_parse_input(self):
         pass
@@ -28,10 +31,20 @@ class BotTestCase(unittest.TestCase):
         pass
     
     def test_command(self):
-        pass
+        @self.bot.command
+        def foo():
+            return 'bar'
+        
+        func = foo
+        self.assertEqual(self.bot.config['PLUGINS'][0], {'funcs': [func], 'hook': 'foo'})
     
     def test_event(self):
-        pass
+        @self.bot.event('JOIN')
+        def foo():
+            return 'bar'
+        
+        func = foo
+        self.assertEqual(self.bot.config['EVENTS'][0], {'funcs': [func], 'hook': 'JOIN'})
     
     def test_reply(self):
         pass

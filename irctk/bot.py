@@ -15,7 +15,7 @@ import imp
 from .config import Config
 from .logging import create_logger
 from .plugins import PluginHandler
-from .ircclient import TcpClient, IrcWrapper, IrcTestClient
+from .ircclient import TcpClient, IrcWrapper
 
 
 class Bot(object):
@@ -54,9 +54,9 @@ class Bot(object):
         self.connection = TcpClient(
                 self.config['SERVER'], 
                 self.config['PORT'],
-                self.logger,
                 self.config['SSL'],
-                self.config['TIMEOUT']
+                self.config['TIMEOUT'],
+                logger=self.logger,
                 )
         
         self.irc = IrcWrapper(
@@ -301,22 +301,3 @@ class Bot(object):
         while True:
             time.sleep(wait)
 
-
-class TestBot(Bot):
-    shutdown = False
-    
-    def __init__(self):
-        self.config = Config(self.root_path, self.default_config)
-        self.irc = IrcTestClient(
-                self.config['NICK'], 
-                self.config['REALNAME'], 
-                self.config['CHANNELS']
-                )
-        self.connection = self.irc.connection
-    
-    def run(self):
-        
-        thread.start_new_thread(self._parse_input, ())
-        
-        while not self.shutdown:
-            time.sleep(0.01)

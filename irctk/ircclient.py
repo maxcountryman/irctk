@@ -54,7 +54,7 @@ class TcpClient(object):
         client.close()
     '''
     
-    def __init__(self, host, port, logger, ssl=False, timeout=300.0):
+    def __init__(self, host, port, ssl=False, timeout=300.0, logger=None):
         self.host = host
         self.port = port
         self.ssl = ssl
@@ -422,29 +422,3 @@ class IrcWrapper(object):
         self.connection.close()
         time.sleep(wait)
 
-
-class IrcTestClient(IrcWrapper):
-    
-    def __init__(self, nick, realname, channels):
-        self.connection = Queue.Queue()
-        self.connection.out = Queue.Queue()
-        self.connection.inp = Queue.Queue()
-        self.nick = nick
-        self.realname = realname
-        self.user = 'USER ' + nick + ' 3 * ' + realname
-        self.channels = channels
-        self.inp_buffer = ''
-        self.out_buffer = ''
-        
-        self.context = {}
-        
-    def _send(self, wait=0.01):
-        
-        while True:
-            try:
-                time.sleep(wait)
-                while '\r\n' in self.out_buffer:
-                    line, self.out_buffer = self.out_buffer.split('\r\n', 1)
-                    self.connection.out.put(line)
-            except Exception:
-                pass

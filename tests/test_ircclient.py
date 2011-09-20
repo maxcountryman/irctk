@@ -8,7 +8,7 @@ class TcpClientTestCase(unittest.TestCase):
     '''This test case is used to test the TCP client methods.'''
     
     def setUp(self):
-        self.conn = TcpClient('127.0.0.1', '6697', True)
+        self.conn = TcpClient('127.0.0.1', '6697', True, logger=None)
         self.assertTrue(self.conn.host == '127.0.0.1')
         self.assertTrue(self.conn.port == '6697')
         self.assertTrue(self.conn.ssl)
@@ -21,7 +21,7 @@ class IrcWrapperTestCase(unittest.TestCase):
     def setUp(self):
         self.conn = Queue.Queue()
         self.conn.out = ''
-        self.wrapper = IrcWrapper(self.conn, 'test', 'tester', ['#test'])
+        self.wrapper = IrcWrapper(self.conn, 'test', 'tester', ['#test'], None)
         self.assertTrue(self.wrapper.nick == 'test')
         self.assertTrue(self.wrapper.realname == 'tester')
         self.assertTrue(self.wrapper.channels == ['#test'])
