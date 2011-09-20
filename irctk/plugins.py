@@ -26,9 +26,9 @@ class PluginHandler(object):
     def flush_plugin_lists(self):
         '''TODO'''
         
-        old_lists = []
-        old_lists += list(self.config['PLUGINS'])
-        old_lists += list(self.config['EVENTS'])
+        old_lists = [[], []]
+        old_lists[0] += list(self.config['PLUGINS'])
+        old_lists[1] += list(self.config['EVENTS'])
         
         self.config['PLUGINS'] = []
         self.config['EVENTS'] = []
