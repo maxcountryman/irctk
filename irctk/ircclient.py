@@ -20,10 +20,6 @@ import time
 
 from ssl import wrap_socket, SSLError
 
-from .logging import create_logger
-
-logger = create_logger()
-
 
 class TcpClient(object):
     '''This is a TCP client that has been adapted for IRC connections. The 
@@ -58,7 +54,7 @@ class TcpClient(object):
         client.close()
     '''
     
-    def __init__(self, host, port, ssl=False, timeout=300.0):
+    def __init__(self, host, port, logger, ssl=False, timeout=300.0):
         self.host = host
         self.port = port
         self.ssl = ssl
@@ -200,7 +196,7 @@ class IrcWrapper(object):
         irc = IrcWrapper(client, 'Kaa', 'Kaa the Python', channels)
     '''
     
-    def __init__(self, connection, nick, realname, channels):
+    def __init__(self, connection, nick, realname, channels, logger):
         self.connection = connection
         self.nick = nick
         self.realname = realname
@@ -419,12 +415,12 @@ class IrcWrapper(object):
         message = chr(1) + 'ACTION ' + message + chr(1)
         self.send_message(recipient, message)
     
-    def quit(self, message='kaa'):
+    def quit(self, message='kaa', wait=1.0):
         '''TODO'''
         
         self.send_command('QUIT', ':' + message)
         self.connection.close()
-        time.sleep(1)
+        time.sleep(wait)
 
 
 class IrcTestClient(IrcWrapper):

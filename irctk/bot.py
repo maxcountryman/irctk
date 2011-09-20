@@ -10,45 +10,36 @@ import sys
 import time
 import inspect
 import thread
-import Queue
 import imp
 
 from .config import Config
-from .threadpool import ThreadPool
+from .logging import create_logger
+from .plugins import PluginHandler
 from .ircclient import TcpClient, IrcWrapper, IrcTestClient
-
-
-class Context(object):
-    def __init__(self, line, args):
-        self.line = line
-        self.args = args
 
 
 class Bot(object):
     _instance = None
     root_path = os.path.abspath('')
-    job_queue = Queue.Queue()
-    dispatch_queue = Queue.Queue()
-    worker_pool = []
-    total_workers = 0
-    idle_workers = 0
+    logger = create_logger()
     
     default_config = dict({
-        'SERVER': 'irc.voxinfinitus.net',
-        'PORT': 6697,
-        'SSL': True,
-        'TIMEOUT': 300,
-        'NICK': 'Kaa',
-        'REALNAME': 'Kaa the rock python',
-        'CHANNELS': ['#voxinfinitus'],
-        'PLUGINS': [],
-        'EVENTS': [],
+        'SERVER'     : 'irc.voxinfinitus.net',
+        'PORT'       : 6697,
+        'SSL'        : True,
+        'TIMEOUT'    : 300,
+        'NICK'       : 'Kaa',
+        'REALNAME'   : 'Kaa the rock python',
+        'CHANNELS'   : ['#voxinfinitus'],
+        'PLUGINS'    : [],
+        'EVENTS'     : [],
         'MAX_WORKERS': 7,
         'MIN_WORKERS': 3,
         })
     
     def __init__(self):
         self.config = Config(self.root_path, self.default_config)
+        self.plugin = PluginHandler(self.config, self.logger, self.reply)
     
     def __new__(cls, *args, **kwargs):
         '''Here we override the `__new__` method in order to achieve a 
@@ -59,135 +50,22 @@ class Bot(object):
             cls._instance = super(Bot, cls).__new__(cls, *args, **kwargs)
         return cls._instance
     
-    def _add_plugin(self, hook, func, command=True, event=False):
-        '''TODO'''
+    def _create_connection(self):
+        self.connection = TcpClient(
+                self.config['SERVER'], 
+                self.config['PORT'],
+                self.logger,
+                self.config['SSL'],
+                self.config['TIMEOUT']
+                )
         
-        plugin = {}
-        
-        plugin.setdefault('hook', hook)
-        plugin['funcs'] = [func]
-        plugin['help'] = func.__doc__ if func.__doc__ else 'no help provided'
-        
-        if event:
-            command = False # don't process as a command and an event
-            plugin_list = 'EVENTS'
-        
-        if command:
-            plugin_list = 'PLUGINS'
-        
-        self._update_plugins(plugin, plugin_list)
-        
-    def _remove_plugin(self, hook, func, command=True, event=False):
-        '''TODO'''
-        
-        if event:
-            command = False
-            plugin_list = 'EVENTS'
-        
-        if command:
-            plugin_list = 'PLUGINS'
-        
-        plugin_list = self.config[plugin_list]
-        
-        hook_found = lambda : hook == existing_plugin['hook']
-        func_found = lambda : func in existing_plugin['funcs']
-        
-        for existing_plugin in plugin_list:
-            if hook_found() and func_found():
-                existing_plugin['funcs'].remove(func)
-                
-                if not existing_plugin['funcs']:
-                    plugin_list.remove(existing_plugin)
-    
-    def _reset_plugins(self):
-        '''This internal method resets the plugin lists in order to ensure 
-        that our application only uses the most recent plugins as defined by 
-        the application source, i.e. if a plugin is removed this change will 
-        be reflected by resetting the lists and repopulating them.
-        '''
-        
-        self.config['PLUGINS'] = []
-        self.config['EVENTS'] = []
-    
-    def _update_plugins(self, plugin, plugin_list):
-        '''This internal method updates a given list containing plugins, 
-        `plugin_list`, with a plugin dictionary object, `plugin`.
-        
-        Usually used to update the `PLUGINS` or `EVENTS` list in the 
-        configuration dict.
-        '''
-        
-        if not self.config.get(plugin_list):
-            self.config[plugin_list] = []
-        
-        plugin_list = self.config[plugin_list]
-        
-        for i, existing_plugin in enumerate(plugin_list):
-            if plugin['hook'] == existing_plugin['hook']:
-                plugin_list[i]['funcs'] += plugin['funcs']
-                #plugin_list[i]['help'] = plugin['help']
-        
-        def iter_list_hooks():
-            for existing_plugin in plugin_list:
-                yield existing_plugin['hook']
-        
-        if not plugin['hook'] in iter_list_hooks():
-            plugin_list.append(plugin)
-        
-        #for i, existing_plugin in enumerate(self.config[plugin_list]):
-        #    if existing_plugin['func'].__name__ == plugin['func'].__name__:
-        #        self.config[plugin_list][i] = plugin
-        
-        #if not plugin in self.config[plugin_list]:
-        #self.config[plugin_list].append(plugin)
-    
-    def _enqueue_plugin(self, plugin, hook, context):
-        '''This internal method takes a plugin, hook, and context, as 
-        `plugin`, `hook`, and `context`. Checking to see if the context is 
-        equivalent to the hook or begins with the hook plus a space, in the 
-        second case, indicating a plugin passed with arguments. If such 
-        conditions are met the plugin is enqueued in the thread pool.
-        '''
-        
-        if context == hook or context.startswith(hook + ' '):
-            plugin_args = plugin['context']['message'].split(hook, 1)[-1].strip()
-            plugin_context = Context(plugin['context'], plugin_args)
-            
-            task = (self._dequeue_plugin, plugin, plugin_context)
-            self.thread_pool.enqueue_task(*task)
-            #self._dequeue_plugin(plugin, plugin_context)
-    
-    def _dequeue_plugin(self, plugin, plugin_context):
-        '''This internal method assumes that a plugin and plugin context are 
-        passed to it as `plugin` and `plugin_context`. It is intended to be 
-        called as a plugin is being dequeued, i.e. from a thread pool as 
-        called by a worker thread thereof. 
-        
-        The plugin and plugin context are checked against several conditions 
-        that will ultimately affect the formatting of the final message.
-        
-        if the plugin function does return a message, that message is 
-        formatted and sent back to the server via `cls.reply`.
-        '''
-        
-        for func in plugin['funcs']:
-            takes_args = inspect.getargspec(func).args
-            
-            action = False
-            if plugin.get('action') == True:
-                action = True
-            
-            notice = False
-            if plugin.get('notice') == True:
-                notice = True
-            
-            if takes_args:
-                message = func(plugin_context)
-            else:
-                message = func()
-            
-            if message:
-                self.reply(message, plugin_context.line, action, notice)
+        self.irc = IrcWrapper(
+                self.connection, 
+                self.config['NICK'], 
+                self.config['REALNAME'], 
+                self.config['CHANNELS'],
+                self.logger
+                )
     
     def _parse_input(self, prefix='.', wait=0.01):
         '''This internal method handles the parsing of commands and events.
@@ -219,7 +97,7 @@ class Bot(object):
                             plugin['context'] = dict(self.irc.context)
                             hook = prefix + plugin['hook']
                             try:
-                                self._enqueue_plugin(plugin, hook, message)
+                                self.plugin.enqueue_plugin(plugin, hook, message)
                             except Exception, e:
                                 self.logger.error(str(e))
                                 continue
@@ -228,7 +106,7 @@ class Bot(object):
                             event['context'] = dict(self.irc.context)
                             hook = event['hook']
                             try:
-                                self._enqueue_plugin(event, hook, command)
+                                self.plugin.enqueue_plugin(event, hook, command)
                             except Exception, e:
                                 self.logger.error(str(e))
                                 continue
@@ -236,7 +114,7 @@ class Bot(object):
                     # we're done here, context is stale, give us fresh fruit!
                     self.irc.context['stale'] = True    
     
-    def _reloader_loop(self, callback, wait=1.0):
+    def _reloader_loop(self, wait=1.0):
         '''This reloader is based off of the Flask reloader which in turn is 
         based off of the CherryPy reloader.
         
@@ -261,9 +139,9 @@ class Bot(object):
         
         fnames = []
         fnames.extend(iter_module_files())
-        self._reloader(fnames, callback, wait=wait)
+        self._reloader(fnames, wait=wait)
     
-    def _reloader(self, fnames, callback, wait=1.0):
+    def _reloader(self, fnames, wait=1.0):
         '''This reloader is based off of the Flask reloader which in turn is 
         based off of the CherryPy reloader.
         
@@ -300,7 +178,7 @@ class Bot(object):
                     
                     self.logger.info('Changes detected; reloading {0}'.format(filename))
                     
-                    callback()
+                    old_lists = self.plugin.flush_plugin_lists()
                     
                     f = filename.split('/')[-1].split('.')[0]
                     try:
@@ -310,6 +188,10 @@ class Bot(object):
                         continue
                     finally:
                         mtimes[filename] = mtime
+                    
+                    if (self.config['PLUGINS'] or self.config['EVENTS']) == []:
+                        self.config['PLUGINS'] = old_lists[0]
+                        self.config['EVENTS'] = old_lists[1]
                         
             time.sleep(wait)
     
@@ -333,8 +215,7 @@ class Bot(object):
         def wrapper(func):
             plugin.setdefault('hook', func.func_name)
             plugin['funcs'] = [func]
-            plugin['help'] = func.__doc__ if func.__doc__ else 'no help provided'
-            self._update_plugins(plugin, 'PLUGINS')
+            self.plugin.update_plugins(plugin, 'PLUGINS')
             return func
         
         if kwargs or not inspect.isfunction(hook):
@@ -358,7 +239,7 @@ class Bot(object):
         
         def wrapper(func):
             plugin['funcs'] = [func]
-            self._update_plugins(plugin, 'EVENTS')
+            self.plugin.update_plugins(plugin, 'EVENTS')
             return func
         
         plugin['hook'] = hook
@@ -368,22 +249,22 @@ class Bot(object):
     def add_command(self, hook, func):
         '''TODO'''
         
-        self._add_plugin(hook, func, command=True)
+        self.plugin.add_plugin(hook, func, command=True)
     
     def add_event(self, hook, func):
         '''TODO'''
         
-        self._add_plugin(hook, func, event=True)
+        self.plugin.add_plugin(hook, func, event=True)
     
     def remove_command(self, hook, func):
         '''TODO'''
         
-        self._remove_plugin(hook, func, command=True)
+        self.plugin.remove_plugin(hook, func, command=True)
     
     def remove_event(self, hook, func):
         '''TODO'''
         
-        self._remove_plugin(hook, func, event=True)
+        self.plugin.remove_plugin(hook, func, event=True)
     
     def reply(self, message, context, action=False, notice=False, line_limit=400):
         '''TODO'''
@@ -407,30 +288,15 @@ class Bot(object):
             self.irc.send_message(recipient, message, action, notice)
     
     def run(self, wait=0.01):
+        self._create_connection() # updates to the latest config
         
-        self.connection = TcpClient(
-                self.config['SERVER'], 
-                self.config['PORT'], 
-                self.config['SSL'], 
-                self.config['TIMEOUT']
-                )
-        
-        self.irc = IrcWrapper(
-                self.connection, 
-                self.config['NICK'], 
-                self.config['REALNAME'], 
-                self.config['CHANNELS']
-                )
-        
-        self.logger = self.connection.logger
-        
-        self.thread_pool = ThreadPool(self.config['MIN_WORKERS'], self.logger)
+        self.plugin = PluginHandler(self.config, self.logger, self.reply)
         
         self.connection.connect()
-        self.irc.run()
+        self.irc.run() 
         
         thread.start_new_thread(self._parse_input, ())
-        thread.start_new_thread(self._reloader_loop, (self._reset_plugins,))
+        thread.start_new_thread(self._reloader_loop, ())
         
         while True:
             time.sleep(wait)
