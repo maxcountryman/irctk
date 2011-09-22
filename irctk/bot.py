@@ -12,7 +12,7 @@ import thread
 
 from .config import Config
 from .logging import create_logger
-from .reload import Reload
+from .reloader import ReloadHandler
 from .plugins import PluginHandler
 from .ircclient import TcpClient, IrcWrapper
 
@@ -39,7 +39,6 @@ class Bot(object):
     def __init__(self):
         self.config = Config(self.root_path, self.default_config)
         self.plugin = PluginHandler(self.config, self.logger, self.reply)
-        self.reloader = Reload(self.config, self.logger)
     
     def __new__(cls, *args, **kwargs):
         '''Here we override the `__new__` method in order to achieve a 
@@ -215,7 +214,9 @@ class Bot(object):
         self.irc.run() 
         
         thread.start_new_thread(self._parse_input, ())
-        self.reloader.run()
+        
+        plugin_lists = [self.config['PLUGINS'], self.config['EVENTS']]
+        self.reloader = ReloadHandler(plugin_lists, self.plugin, self.logger)
         
         while True:
             time.sleep(wait)
