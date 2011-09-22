@@ -140,3 +140,52 @@ class PluginHandler(object):
             
             if message:
                 self._reply(message, plugin_context.line, action, notice)
+    
+    def filter_plugin_lists(self, plugin_lists, filename):
+        '''TODO'''
+        
+        filtered_lists = []
+        for plugin_list in plugin_lists:
+            filtered_list = self._filter_plugin_list(plugin_list, filename)
+            filtered_lists.append(filtered_list)
+        return filtered_lists
+    
+    def _filter_plugin_list(self, plugin_list, filename):
+        '''TODO'''
+        
+        
+        def func_is_in_file(func, filename): 
+            return inspect.getabsfile(func) == filename
+        
+        filtered_plugins = {}
+        for i, plugin in enumerate(plugin_list):
+            
+            hook = plugin['hook']
+            funcs = plugin['funcs']
+            for x, func in enumerate(funcs):
+                
+                if func_is_in_file(func, filename):
+                    if not hook in filtered_plugins:
+                        filtered_plugins[hook] = []
+                    filtered_plugins[hook].append(funcs.pop(x))
+            
+            if not funcs: # no functions, so delete the hook
+                del plugin_list[i]
+        
+        return filtered_plugins
+    
+    def restore_plugin_lists(self, plugin_lists, filtered_lists):
+        '''TODO'''
+        
+        for plugin_list in plugin_lists:
+            for filtered_list in filtered_lists:
+                self._restore_plugin_list(plugin_list, filtered_list)
+        
+    def _restore_plugin_list(self, plugin_list, filtered_list):
+        '''TODO'''
+        
+        for plugin in plugin_list:
+            for hook, funcs in filtered_list.items():
+                if hook not in plugin_list:
+                    plugin[hook] = []
+                plugin[hook].extend(funcs)
