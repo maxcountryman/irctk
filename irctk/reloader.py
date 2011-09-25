@@ -1,5 +1,5 @@
 '''
-    irctk.realoder
+    irctk.reloader
     --------------
     
     Logic for dyanmic reloading upon file changes.
@@ -99,8 +99,6 @@ class ReloadHandler(threading.Thread):
                         mtimes[filename] = mtime
                     
                     if filtered_lists:
-                        for plugin_list in self.plugin_lists:
-                            plugin_list = []
                         self.plugin.restore_plugin_lists(self.plugin_lists, filtered_lists)
                         
             time.sleep(wait)

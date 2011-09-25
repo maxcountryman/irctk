@@ -10,8 +10,8 @@ import time
 import inspect
 import thread
 
-from .config import Config
 from .logging import create_logger
+from .config import Config
 from .reloader import ReloadHandler
 from .plugins import PluginHandler
 from .ircclient import TcpClient, IrcWrapper
@@ -23,17 +23,17 @@ class Bot(object):
     logger = create_logger()
     
     default_config = dict({
-        'SERVER'     : 'irc.voxinfinitus.net',
-        'PORT'       : 6697,
-        'SSL'        : True,
-        'TIMEOUT'    : 300,
-        'NICK'       : 'Kaa',
-        'REALNAME'   : 'Kaa the rock python',
-        'CHANNELS'   : ['#voxinfinitus'],
-        'PLUGINS'    : [],
-        'EVENTS'     : [],
-        'MAX_WORKERS': 7,
-        'MIN_WORKERS': 3,
+        'SERVER'      : 'irc.voxinfinitus.net',
+        'PORT'        : 6697,
+        'SSL'         : True,
+        'TIMEOUT'     : 300,
+        'NICK'        : 'Kaa',
+        'REALNAME'    : 'Kaa the rock python',
+        'CHANNELS'    : ['#voxinfinitus'],
+        'PLUGINS'     : [],
+        'EVENTS'      : [],
+        'MAX_WORKERS' : 7,
+        'MIN_WORKERS' : 3,
         })
     
     def __init__(self):
@@ -195,6 +195,7 @@ class Bot(object):
         messages = []
         
         def handle_long_message(message):
+            #truncate_at = message.rfind(' ', 1, line_limit) + 1
             message, extra = message[:line_limit], message[line_limit:]
             messages.append(message)
             if extra:

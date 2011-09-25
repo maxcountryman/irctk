@@ -49,7 +49,7 @@ class ThreadPool(threading.Thread):
     Inherits from `threading.Thread`.
     '''
     
-    def __init__(self, workers, logger, max_workers=11, wait=0.01):
+    def __init__(self, workers, logger, max_workers=11, wait=0.05):
         threading.Thread.__init__(self)
         self.tasks = Queue.Queue()
         self.workers = workers
@@ -79,9 +79,9 @@ class ThreadPool(threading.Thread):
                 self.number_of_workers += 1
                 self.worker() # spawn a worker
             
-            if not self.tasks.empty() and more_workers_ok():
-                self.number_of_workers += 1
-                self.worker()
+            #if not self.tasks.empty() and more_workers_ok():
+            #    self.number_of_workers += 1
+            #    self.worker()
             
-            if self.tasks.empty() and too_many_workers():
-                self.number_of_workers -= 1
+            #if self.tasks.empty() and too_many_workers():
+            #    self.number_of_workers -= 1

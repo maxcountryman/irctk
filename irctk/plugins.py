@@ -178,6 +178,7 @@ class PluginHandler(object):
         '''TODO'''
         
         for plugin_list in plugin_lists:
+            plugin_list = []
             for filtered_list in filtered_lists:
                 self._restore_plugin_list(plugin_list, filtered_list)
         
