@@ -209,8 +209,6 @@ class Bot(object):
     def run(self, wait=0.01):
         self._create_connection() # updates to the latest config
         
-        self.plugin = PluginHandler(self.config, self.logger, self.reply)
-        
         self.connection.connect()
         self.irc.run() 
         
