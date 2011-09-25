@@ -30,31 +30,41 @@ class Worker(threading.Thread):
     def run(self):
         while True:
             func, args, kwargs = self.tasks.get()
-            try: 
+            try:
                 func(*args, **kwargs)
             except Exception, e:
                 error = 'Worker error: {0}'.format(e)
                 self.logger.error(error)
-            self.tasks.task_done()
-
+            finally:
+                self.tasks.task_done()
 
 class ThreadPool(threading.Thread):
     '''This class provides an interface to a thread pool mechanism. Tasks may 
     be enqueued via `cls.enqueue_task`. Worker threads are added via 
-    `cls.worker`.
+    `cls.spawn_worker`.
     
-    A given number, i.e. `workers`, of workers will be spawned upon 
+    A given number, i.e. `min_workers`, of workers will be spawned upon 
     instantiation.
     
     Inherits from `threading.Thread`.
+    
+    Example usage might go something like this:
+        
+        def square(x):
+            return x * x
+        
+        thread_pool = ThreadPool(3, 7, logger=logger)
+        thread_pool.enqueue_task(square, 2) # enqueue a func with args
+        
+    This will enqueue the above function and call it. In practical usage the 
+    function should serve as some kind of callback.
     '''
     
-    def __init__(self, min_workers, max_workers=11, logger=None, wait=0.01, timeout=30.0):
+    def __init__(self, min_workers, logger=None, wait=0.01):
         threading.Thread.__init__(self)
         self.tasks = Queue.Queue()
         self.min_workers = min_workers
-        self.max_workers = max_workers
-        self.workers = []
+        self.workers = 0
         self.logger = logger
         self.wait = wait
         self.daemon = True
@@ -64,24 +74,16 @@ class ThreadPool(threading.Thread):
         task = (func, args, kwargs)
         self.tasks.put(task)
     
-    def spawn_worker(self):
-        self.workers += Worker(self.tasks, self.logger)
+    def _spawn_worker(self):
+        Worker(self.tasks, self.logger)
     
     def run(self):
         while True:
             time.sleep(self.wait)
             
-            too_few_workers = lambda : self.number_of_workers < self.min_workers
-            more_workers_ok = lambda : self.number_of_workers < self.max_workers
-            too_many_workers = lambda : self.number_of_workers > self.min_workers
+            too_few_workers = lambda : self.workers < self.min_workers
             
             if too_few_workers():
-                self.number_of_workers += 1
-                self.spawn_worker()
-            
-            if not self.tasks.empty() and more_workers_ok():
-                self.number_of_workers += 1
-                self.spwan_worker()
-            
-            if self.tasks.empty() and too_many_workers():
-                self.number_of_workers -= 1
+                self.workers += 1
+                self._spawn_worker()
+

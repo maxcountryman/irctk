@@ -20,7 +20,7 @@ class PluginHandler(object):
     def __init__(self, config, logger, reply_method):
         self.config = config
         self.logger = logger
-        self.thread_pool = ThreadPool(self.config['MIN_WORKERS'], self.logger)
+        self.thread_pool = ThreadPool(self.config['MIN_WORKERS'], logger=self.logger)
         self._reply = reply_method
     
     def add_plugin(self, hook, func, command=True, event=False):
@@ -178,7 +178,7 @@ class PluginHandler(object):
         '''TODO'''
         
         for plugin_list in plugin_lists:
-            plugin_list = []
+            plugin_list = [] # reset the list
             for filtered_list in filtered_lists:
                 self._restore_plugin_list(plugin_list, filtered_list)
         
