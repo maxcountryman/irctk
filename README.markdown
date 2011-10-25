@@ -98,3 +98,22 @@ In the above example, `bot.reply` is a special method of the bot instance which
 will automatically format a reply to the correct recipient, i.e. either a user
 who has sent the bot a private message or the channel the plugin was called
 from.
+
+
+## Server Commands (Events to bind to)
+
+Here's a quick list of various IRC server commands you can bind bot.event() to.
+Bear in mind that this list may be missing some commands but that doesn't
+prevent the program from being bound to such commands.
+
+    NICK
+    USER
+    PART
+    QUIT
+    JOIN
+    PRIVMSG
+    NOTICE
+    PING
+    PONG
+
+There are others, feel free to add to this list! :)
