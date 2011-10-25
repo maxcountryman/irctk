@@ -106,14 +106,25 @@ Here's a quick list of various IRC server commands you can bind bot.event() to.
 Bear in mind that this list may be missing some commands but that doesn't
 prevent the program from being bound to such commands.
 
+    PRIVMSG
+    NOTICE
+    WHO
+    WHOIS
+    WHOWAS
     NICK
     USER
     PART
     QUIT
     JOIN
-    PRIVMSG
-    NOTICE
+    MODE
+    TOPIC
+    NAMES
+    LIST
+    INVITE
+    KICK
+    KILL
     PING
     PONG
 
-There are others, feel free to add to this list! :)
+There are others, feel free to add to this list! :) This may also be useful: 
+http://www.irchelp.org/irchelp/rfc/rfc.html
