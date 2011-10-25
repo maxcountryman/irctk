@@ -128,3 +128,10 @@ prevent the program from being bound to such commands.
 
 There are others, feel free to add to this list! :) This may also be useful: 
 http://www.irchelp.org/irchelp/rfc/rfc.html
+
+Here's a brief example of binding an event to a JOIN event:
+
+    @bot.event('JOIN')
+    def spammy_greeter(context):
+        user = context.line['user']
+        return 'Hi there, ' + user
