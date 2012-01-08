@@ -153,21 +153,19 @@ class PluginHandler(object):
     def _filter_plugin_list(self, plugin_list, filename):
         '''TODO'''
         
-        
         def func_is_in_file(func, filename): 
             return inspect.getabsfile(func) == filename
         
         filtered_plugins = {}
         for i, plugin in enumerate(plugin_list):
             
-            hook = plugin['hook']
+            hook  = plugin['hook']
             funcs = plugin['funcs']
-            for x, func in enumerate(funcs):
-                
+            for j, func in enumerate(funcs):
                 if func_is_in_file(func, filename):
                     if not hook in filtered_plugins:
                         filtered_plugins[hook] = []
-                    filtered_plugins[hook].append(funcs.pop(x))
+                    filtered_plugins[hook].append(funcs.pop(j))
             
             if not funcs: # no functions, so delete the hook
                 del plugin_list[i]
@@ -178,7 +176,7 @@ class PluginHandler(object):
         '''TODO'''
         
         for plugin_list in plugin_lists:
-            plugin_list = [] # reset the list
+            #plugin_list = [] # reset the list
             for filtered_list in filtered_lists:
                 self._restore_plugin_list(plugin_list, filtered_list)
         
@@ -189,4 +187,4 @@ class PluginHandler(object):
             for hook, funcs in filtered_list.items():
                 if hook not in plugin_list:
                     plugin[hook] = []
-                plugin[hook].extend(funcs)
+                plugin[hook] = funcs

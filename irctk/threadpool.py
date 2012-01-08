@@ -33,10 +33,12 @@ class Worker(threading.Thread):
             try:
                 func(*args, **kwargs)
             except Exception, e:
-                error = 'Worker error: {0}'.format(e)
+                print e
+                error = 'Error while executing function in worker: {0} - {1}'.format(func.__name__, e)
                 self.logger.error(error)
             finally:
                 self.tasks.task_done()
+
 
 class ThreadPool(threading.Thread):
     '''This class provides an interface to a thread pool mechanism. Tasks may 

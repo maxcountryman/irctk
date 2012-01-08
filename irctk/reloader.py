@@ -75,7 +75,7 @@ class ReloadHandler(threading.Thread):
                 try:
                     mtime = os.stat(filename).st_mtime
                 except OSError, e:
-                    self.logger.error('Reloader error: {0}'.format(e))
+                    self.logger.error('Reloader error: ' + e)
                     continue
                 
                 old_time = mtimes.get(filename)
@@ -84,12 +84,12 @@ class ReloadHandler(threading.Thread):
                 elif mtime > old_time:
                     mtimes[filename] = mtime
                     
-                    self.logger.info('Changes detected; reloading {0}'.format(filename))
-                    
+                    self.logger.info('Changes detected; reloading ' + filename)
                     filtered_lists = self.plugin.filter_plugin_lists(self.plugin_lists, filename)
                     
                     f = os.path.split(filename)[-1]
                     f = os.path.splitext(f)[0]
+                    
                     try:
                         imp.load_source(f, filename)
                     except Exception, e:
