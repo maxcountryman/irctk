@@ -193,13 +193,14 @@ class IrcWrapper(object):
         # define some channels to join
         channels = ['#voxinfinitus', '#testing']
         
-        irc = IrcWrapper(client, 'Kaa', 'Kaa the Python', channels)
+        irc = IrcWrapper(client, 'Kaa', 'Kaa the Python', None, channels)
     '''
     
-    def __init__(self, connection, nick, realname, channels, logger):
+    def __init__(self, connection, nick, realname, password, channels, logger):
         self.connection = connection
         self.nick = nick
         self.realname = realname
+        self.password = password
         self.user = 'USER ' + nick + ' 3 * ' + realname
         self.channels = channels
         self.inp_buffer = ''
@@ -214,7 +215,10 @@ class IrcWrapper(object):
         connection object is received.
         '''
         
-        lines = ['NICK ' + self.nick, self.user]
+        lines = []
+        if self.password != None:
+            lines.append('PASS ' + self.password)
+        lines += ['NICK ' + self.nick, self.user]
         self._send_lines(lines)
     
     def _send(self, wait=0.1, wait_time=1.0, wait_base=1.0, byte_size=8192):

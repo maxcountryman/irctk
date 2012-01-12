@@ -25,6 +25,7 @@ class Bot(object):
     default_config = dict({
         'SERVER'      : 'irc.voxinfinitus.net',
         'PORT'        : 6697,
+        'PASSWORD'    : None,
         'SSL'         : True,
         'TIMEOUT'     : 300,
         'NICK'        : 'Kaa',
@@ -61,7 +62,8 @@ class Bot(object):
         self.irc = IrcWrapper(
                 self.connection, 
                 self.config['NICK'], 
-                self.config['REALNAME'], 
+                self.config['REALNAME'],
+                self.config['PASSWORD'], 
                 self.config['CHANNELS'],
                 self.logger
                 )
