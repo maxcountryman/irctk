@@ -9,7 +9,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='IrcTK',
-    version='0.2.2',
+    version='0.2.3',
     url='https://github.com/maxcountryman/irctk',
     license='BSD',
     author='Max Countryman',
