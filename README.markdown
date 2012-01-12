@@ -21,10 +21,10 @@ Alternatively easy_install may be used: `easy_install irctk`
 ##Writing Your First App
 
 First you'll want to make a configuration file for you application. You can
-save this as whatever you'd like, for this example we'll save ours as 
-`settings.cfg`. Several parameters are expected in order to set up the 
+save this as whatever you'd like, for this example we'll save ours as
+`settings.cfg`. Several parameters are expected in order to set up the
 connection. For instance your `settings.cfg` might look something like this:
-    
+
     SERVER = 'irc.voxinfinitus.net'
     PORT = 6667
     SSL = False
@@ -33,23 +33,23 @@ connection. For instance your `settings.cfg` might look something like this:
     REALNAME = 'A Python Bot'
     CHANNELS = ['#voxinfinitus']
 
-Next you'll want to create a new file and call it `bot.py` or some other cool 
-name. He you'll import the framework bot object, called Bot(). Assign this 
+Next you'll want to create a new file and call it `bot.py` or some other cool
+name. He you'll import the framework bot object, called Bot(). Assign this
 object to a local variable, e.g. `bot`.
-    
+
     from irctk import Bot
     bot = Bot()
 
 Remember the configuration file you just wrote? Using our instance of the bot
 class you'll load it up with the following line:
-    
+
     bot.config.from_pyfile('settings.cfg')
 
 Plugins are realized in a slightly different way than some other IRC bots.
 Although they are still loaded into the execution loop, there is no respository
 of plugins. Instead you can hook in any function you like to the execution loop
 by using a decorator:
-    
+
     @bot.command('test')
     def test_plugin():
         return 'Testing... 1, 2, 3!'
@@ -57,9 +57,9 @@ by using a decorator:
 These commands may live anywhere you like. So if you prefer to split them out
 into a separate file, that's no problem.
 
-Finally you will want to run your app. To do so simply add the below code to 
+Finally you will want to run your app. To do so simply add the below code to
 the bottom of your module:
-    
+
     if __name__ == '__main__':
         bot.run()
 
@@ -74,20 +74,20 @@ the plugin's function.
 This state object provides a convenient interface for handling how the plugin
 behaves. For instance, we might define a plugin function that shows us this
 state:
-    
+
     @bot.command('debug')
     def show_state(context):
         '''This plugin function receives the state from the framework as
         `context` this allows us to do a lot of cool things!
-        
+
         `context.args` is always any arguments passed to the plugin when called
         from IRC. For instance in the case of, `.foo bar`, context.args will be
         `bar`.
-        
+
         `context.line` is a dictionary containing the parsed IRC line as found
         when the plugin was called.
         '''
-        
+
         if context.args: # if the plugin was called with argument variables
             bot.reply(context.args, context.line) # show those arguments
             return str(context.line)              # show us the parsed line
@@ -126,7 +126,7 @@ prevent the program from being bound to such commands.
     PING
     PONG
 
-There are others, feel free to add to this list! :) This may also be useful: 
+There are others, feel free to add to this list! :) This may also be useful:
 http://www.irchelp.org/irchelp/rfc/rfc.html
 
 Here's a brief example of binding a function to a JOIN event:
