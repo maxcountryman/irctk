@@ -30,7 +30,7 @@ class IrcWrapperTestCase(unittest.TestCase):
         self.wrapper._register()
         nick = 'NICK test\r\n'
         user = 'USER test 3 * tester\r\n'
-        self.assertTrue((nick and user) in self.wrapper.out_buffer)
+        self.assertTrue(nick in self.wrapper.out_buffer and user in self.wrapper.out_buffer)
         self.assertEqual(nick, self.wrapper.out_buffer.split('\r\n')[0] + '\r\n')
         self.assertEqual(user, self.wrapper.out_buffer.split('\r\n')[1] + '\r\n')
     
