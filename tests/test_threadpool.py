@@ -1,4 +1,5 @@
 import unittest
+import Queue
 
 from irctk.threadpool import ThreadPool, Worker
 
@@ -7,7 +8,11 @@ class WorkerTestCase(unittest.TestCase):
     '''This test case tests the Worker class methods.'''
     
     def setUp(self):
-        self.tasks = [1, 2, 3]
+        def foo():
+            pass
+        q = Queue.Queue()
+        q.put([foo, [], {}])
+        self.tasks = q
         self.logger = None
         self.worker = Worker(self.tasks, self.logger)
         
