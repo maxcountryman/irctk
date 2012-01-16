@@ -10,8 +10,9 @@ class ContextTestCase(unittest.TestCase):
         line = {'line': 'foo'}
         args = {'args': 'bar'}
         self.context = Context(line, args)
-        
-        self.assertEquals(self.conext.line, {'line': 'foo'})
+
+    def test_context(self):
+        self.assertEquals(self.context.line, {'line': 'foo'})
         self.assertEquals(self.context.args, {'args': 'bar'})
 
 
