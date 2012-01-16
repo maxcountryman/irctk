@@ -21,7 +21,7 @@ class IrcWrapperTestCase(unittest.TestCase):
     def setUp(self):
         self.conn = Queue.Queue()
         self.conn.out = ''
-        self.wrapper = IrcWrapper(self.conn, 'test', 'tester', ['#test'], None)
+        self.wrapper = IrcWrapper(self.conn, 'test', 'tester', None, ['#test'], None)
         self.assertTrue(self.wrapper.nick == 'test')
         self.assertTrue(self.wrapper.realname == 'tester')
         self.assertTrue(self.wrapper.channels == ['#test'])
