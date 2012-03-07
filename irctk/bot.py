@@ -35,6 +35,7 @@ class Bot(object):
         'EVENTS'      : [],
         'MAX_WORKERS' : 7,
         'MIN_WORKERS' : 3,
+        'CMD_PREFIX'  : '.',
         })
     
     def __init__(self):
@@ -68,7 +69,7 @@ class Bot(object):
                 self.logger
                 )
     
-    def _parse_input(self, prefix='.', wait=0.01):
+    def _parse_input(self, wait=0.01):
         '''This internal method handles the parsing of commands and events.
         Hooks for commands are prefixed with a character, by default `.`. This 
         may be overriden by specifying `prefix`.
@@ -83,7 +84,7 @@ class Bot(object):
         Once the context is consumed, we set the context variable `stale` to 
         True.
         '''
-        
+        prefix=self.config['PREFIX']
         while True:
             time.sleep(wait)
             
