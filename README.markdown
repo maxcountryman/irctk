@@ -9,7 +9,7 @@ don't have to disconnect and reconnect as changes are made.
 
 Plugins are a breeze to write. Simply decorate functions with the provided
 methods. Plugins may be tied to a hook or an event, such as 'PRIVMSG'.
-A confirguable thread pool manages dispatching of plugins to ensure the
+A configurable thread pool manages dispatching of plugins to ensure the
 applications are fast and responsive.
 
 ##Installation
