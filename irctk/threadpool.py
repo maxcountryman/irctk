@@ -1,7 +1,7 @@
 '''
     irctk.threadpool
     ----------------
-    
+
     A thread pool to be used with plugin dispatching.
 '''
 
@@ -11,32 +11,32 @@ import time
 
 
 class Worker(threading.Thread):
-    '''This class may be used to create new worker threads and is used by the 
-    thread pool class to do as such. It will take a given queue, `tasks`, and 
-    extract from it the next task. This operation assumes the task is a 
-    function packed in the form, func, args, kwargs. Upon extracting the task 
-    the function is executed and the queue notified the task was completed.
-    
-    Inherits from `threading.Thread`.
+    '''Provides a worker object.
+
+    This class provides a thread worker object which is used by the ThreadPool
+    object to execute tasks, i.e. functions.
     '''
-    
+
     def __init__(self, tasks, logger):
         threading.Thread.__init__(self)
         self.tasks = tasks
         self.logger = logger
         self.daemon = True
         self.start()
-    
-    def run(self):
+
+    def run(self):  # pragma: no cover
         while True:
             func, args, kwargs = self.tasks.get()
             try:
+                # try to execute the function
                 func(*args, **kwargs)
             except Exception, e:
-                print e
-                error = 'Error while executing function in worker: {0} - {1}'.format(func.__name__, e)
-                self.logger.error(error)
+                # if we fail, raise the exception and log it
+                error = 'Error while executing function in worker: {0} - {1}'
+                self.logger.error(error.format(func.__name__, e),
+                                  exc_info=True)
             finally:
+                # no matter what, we need to set the task to done
                 self.tasks.task_done()
 
 
