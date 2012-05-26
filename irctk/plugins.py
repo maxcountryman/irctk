@@ -7,7 +7,7 @@
 
 import inspect
 
-from .threadpool import ThreadPool
+from irctk.threadpool import ThreadPool
 
 
 class Context(object):
