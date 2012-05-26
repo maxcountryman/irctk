@@ -21,55 +21,32 @@ class ReloadHandler(threading.Thread):
         self.daemon = True
         self.start()
 
-    def _reloader_loop(self, wait=1.0):
+    def _reloader(self, wait=1.0):
         '''This reloader is based off of the Flask reloader which in turn is
         based off of the CherryPy reloader.
-
-        This internal method takes on parameter, `wait`, the wait time given
-        in seconds. The default value is set to one second.
-        '''
-
-        def iter_module_files():
-            for module in sys.modules.values():
-                filename = getattr(module, '__file__', None)
-                if filename:
-                    old = None
-                    while not os.path.isfile(filename):
-                        old = filename
-                        filename = os.path.dirname(filename)
-                        if filename == old:
-                            break
-                    else:
-                        if filename[-4:] in ('.pyc', '.pyo'):
-                            filename = filename[:-1]
-                        yield filename
-
-        fnames = []
-        fnames.extend(iter_module_files())
-        self._reloader(fnames, wait=wait)
-
-    def _reloader(self, fnames, wait):
-        '''This reloader is based off of the Flask reloader which in turn is
-        based off of the CherryPy reloader.
-
-        This internal method takes two paramters, `fnames` and `wait.` Here
-        we loop over a list of file names, `fnames`, using `os.stat` to
-        determine if the mtime of the file has been changed. If so we use
-        `imp.load_source` to reload the module.
-
-        The `fnames` parameter should be a list of files names to be parsed by
-        the reloader.
-
-        A callback function, `callback` may be provided as a function to be
-        called when the file is reloaded.
-
-        The `wait` parameter specifies the time in seconds to run
-        `time.sleep()`.
         '''
 
         mtimes = {}
 
         while True:
+            def iter_module_files():
+                for module in sys.modules.values():
+                    filename = getattr(module, '__file__', None)
+                    if filename:
+                        old = None
+                        while not os.path.isfile(filename):
+                            old = filename
+                            filename = os.path.dirname(filename)
+                            if filename == old:
+                                break
+                        else:
+                            if filename[-4:] in ('.pyc', '.pyo'):
+                                filename = filename[:-1]
+                            yield filename
+
+            fnames = []
+            fnames.extend(iter_module_files())
+
             for filename in fnames:
                 try:
                     mtime = os.stat(filename).st_mtime
@@ -105,4 +82,4 @@ class ReloadHandler(threading.Thread):
             time.sleep(wait)
 
     def run(self):
-        self._reloader_loop()
+        self._reloader()

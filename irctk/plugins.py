@@ -6,6 +6,7 @@
 '''
 
 import inspect
+import re
 
 from irctk.threadpool import ThreadPool
 
@@ -28,7 +29,16 @@ class PluginHandler(object):
         plugin = {}
 
         plugin.setdefault('hook', hook)
-        plugin['funcs'] = [func]
+        plugin.setdefault('funcs', [])
+
+        self.logger.debug(str(plugin['funcs']))
+
+        # add plugin functions
+        for i, f in enumerate(plugin['funcs']):
+            if f.name == func.name:
+                plugin['funcs'][i] = func
+            else:
+                plugin['funcs'] += [func]
 
         if event:
             command = False  # don't process as a command and an event
@@ -91,14 +101,15 @@ class PluginHandler(object):
         conditions are met the plugin is enqueued in the thread pool.
         '''
 
-        if context == hook or context.startswith(hook + ' '):
+        if context == hook or \
+                      context.startswith(hook + ' ') or \
+                      re.search(hook, context):
             plugin_args = \
                     plugin['context']['message'].split(hook, 1)[-1].strip()
             plugin_context = Context(plugin['context'], plugin_args)
 
             task = (self.dequeue_plugin, plugin, plugin_context)
             self.thread_pool.enqueue_task(*task)
-            #self._dequeue_plugin(plugin, plugin_context)
 
     def dequeue_plugin(self, plugin, plugin_context):
         '''This method assumes that a plugin and plugin context are

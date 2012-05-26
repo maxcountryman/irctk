@@ -32,6 +32,7 @@ class Bot(object):
                       'CHANNELS': [],
                       'PLUGINS': [],
                       'EVENTS': [],
+                      'REGEX': [],
                       'MAX_WORKERS': 7,
                       'MIN_WORKERS': 3,
                       'CMD_PREFIX': '.'}
@@ -44,7 +45,6 @@ class Bot(object):
         '''Here we override the `__new__` method in order to achieve a
         singleton effect. In this way we can reload instances of the object
         without having to worry about which instance we reference.'''
-
         if not cls._instance:
             cls._instance = super(Bot, cls).__new__(cls, *args, **kwargs)
         return cls._instance
@@ -86,6 +86,7 @@ class Bot(object):
                 args = self.irc.context.get('args')
                 command = self.irc.context.get('command')
                 message = self.irc.context.get('message')
+                line = self.irc.context.get('line')
 
                 while not self.context_stale and args:
                     # process for a message
@@ -101,6 +102,13 @@ class Bot(object):
                             event['context'] = dict(self.irc.context)
                             hook = event['hook']
                             self.plugin.enqueue_plugin(event, hook, command)
+
+                    # process regex
+                    for regex in self.config['REGEX']:
+                        regex['context'] = dict(self.irc.context)
+                        hook = regex['hook']
+                        self.plugin.enqueue_plugin(regex, hook, line)
+
 
                     # irc context consumed; mark it as such
                     self.irc.context['stale'] = True
@@ -123,7 +131,6 @@ class Bot(object):
         Otherwise if no `hook` parameter is passed the, `hook` is assumed to
         be the wrapped function and handled accordingly.
         '''
-
         plugin = {}
 
         def wrapper(func):
@@ -148,12 +155,23 @@ class Bot(object):
         this wrapped function to. For example, JOIN, which would call the
         function on all JOIN events.
         '''
-
         plugin = {}
 
         def wrapper(func):
             plugin['funcs'] = [func]
             self.plugin.update_plugins(plugin, 'EVENTS')
+            return func
+
+        plugin['hook'] = hook
+        plugin.update(kwargs)
+        return wrapper
+
+    def regex(self, hook, **kwargs):
+        plugin = {}
+
+        def wrapper(func):
+            plugin['funcs'] = [func]
+            self.plugin.update_plugins(plugin, 'REGEX')
             return func
 
         plugin['hook'] = hook

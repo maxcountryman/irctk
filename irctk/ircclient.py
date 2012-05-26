@@ -281,6 +281,7 @@ class IrcWrapper(object):
                              'user': self.prefix.rsplit('!', 1)[0],
                              'hostmask': self.prefix.rsplit('!', 1)[-1],
                              'message': self.message if self.args else '',
+                             'line': self.line,
                              'stale': False}
 
                     if 'ERROR :Closing link:' in self.line:
