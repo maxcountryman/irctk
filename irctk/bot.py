@@ -10,11 +10,11 @@ import time
 import inspect
 import thread
 
-from .logging import create_logger
-from .config import Config
-from .reloader import ReloadHandler
-from .plugins import PluginHandler
-from .ircclient import TcpClient, IrcWrapper
+from irctk.logging import create_logger
+from irctk.config import Config
+from irctk.reloader import ReloadHandler
+from irctk.plugins import PluginHandler
+from irctk.ircclient import TcpClient, IrcWrapper
 
 
 class Bot(object):
@@ -78,7 +78,7 @@ class Bot(object):
         Once the context is consumed, we set the context variable `stale` to
         True.
         '''
-        prefix = self.config['PREFIX']
+        prefix = self.config['CMD_PREFIX']
         while True:
             time.sleep(wait)
 
