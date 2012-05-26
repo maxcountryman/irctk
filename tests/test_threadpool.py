@@ -1,57 +1,42 @@
-import unittest
-import Queue
-
 from irctk.threadpool import ThreadPool, Worker
+from base import IrcTkTestCase
 
 
-class WorkerTestCase(unittest.TestCase):
-    '''This test case tests the Worker class methods.'''
-    
+class ThreadPoolTestCase(IrcTkTestCase):
     def setUp(self):
-        def foo():
-            pass
-        q = Queue.Queue()
-        q.put([foo, [], {}])
-        self.tasks = q
-        self.logger = None
-        self.worker = Worker(self.tasks, self.logger)
-        
-        self.assertEquals(self.worker.logger, None)
-        self.assertTrue(self.worker.daemon)
-    
-    def test_run(self):
-        pass
+        IrcTkTestCase.setUp(self)
 
-
-class ThreadPoolTestCase(unittest.TestCase):
-    '''This test case tests the ThreadPool class methods.'''
-    
-    def setUp(self):
         self.min_workers = 3
-        self.logger = None
-        self.tp = ThreadPool(self.min_workers, self.logger)
-        
-        self.assertEquals(self.tp.min_workers, 3)
-        self.assertEquals(self.tp.logger, None)
-        self.assertEquals(self.tp.wait, 0.01)
-        self.assertTrue(self.tp.daemon)
-    
+        self.tp = ThreadPool(self.min_workers)
+        self.assertEqual(self.tp.min_workers, 3)
+        self.assertEqual(self.tp.logger, None)
+        self.assertEqual(self.tp.wait, 0.01)
+        self.assertTrue(self.tp.daemon is not None)
+
+        self.worker = Worker(self.tp.tasks, None)
+        self.assertEqual(self.tp.tasks, self.worker.tasks)
+        self.assertEqual(None, self.worker.logger)
+
+    def foo(self, *args, **kwargs):
+        return args or kwargs or 'bar'
+
+    def bad_foo(self):
+        raise Exception
+
     def test_enqueue_task(self):
         self.tp.enqueue_task('foo', 'bar')
         task = self.tp.tasks.get()
-        self.assertEquals(('foo', ('bar',), {}), task)
-        
-        test = 'test'
+        self.assertEqual(('foo', ('bar',), {}), task)
+
         self.tp.enqueue_task('foo', 'bar', test=True)
         task = self.tp.tasks.get()
-        self.assertEquals(('foo', ('bar',), {'test': True}), task)
-    
-    def test_worker(self):
-        pass
-    
-    def test_run(self):
-        pass
+        self.assertEqual(('foo', ('bar',), {'test': True}), task)
 
-if __name__ == '__main__':
-    unittest.main()
+    def test_spawn_worker(self):
+        self.tp._spawn_worker()
+        self.assertTrue(self.tp.too_few_workers)
 
+        # spawn enough workers to surpass too_few_workers
+        for i in range(3):
+            self.tp._spawn_worker()
+        self.assertFalse(self.tp.too_few_workers)
