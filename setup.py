@@ -11,7 +11,7 @@ import sys
 from setuptools import setup, find_packages
 
 if sys.argv[-1] == 'test':
-    nosetests = 'nosetests -v --with-coverage --cover-package=rauth'
+    nosetests = 'nosetests -v --with-coverage --cover-package=irctk'
     try:
         import yanc
         nosetests += ' --with-yanc'

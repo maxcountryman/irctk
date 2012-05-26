@@ -43,11 +43,11 @@ class Worker(threading.Thread):
 
 
 class ThreadPool(threading.Thread):
-    '''This class provides an interface to a thread pool mechanism. Tasks may 
-    be enqueued via :class:`enqueue_task`. Worker threads are added via 
+    '''This class provides an interface to a thread pool mechanism. Tasks may
+    be enqueued via :class:`enqueue_task`. Worker threads are added via
     :class:`spawn_worker`.
 
-    A given number, i.e. `min_workers`, of workers will be spawned upon 
+    A given number, i.e. `min_workers`, of workers will be spawned upon
     instantiation.
 
     Inherits from `threading.Thread`.
@@ -60,7 +60,7 @@ class ThreadPool(threading.Thread):
         thread_pool = ThreadPool(3, logger=logger)
         thread_pool.enqueue_task(square, 2)  # enqueue a func with args
 
-    This will enqueue the above function and call it. In practical usage the 
+    This will enqueue the above function and call it. In practical usage the
     function should serve as some kind of callback.
     '''
 

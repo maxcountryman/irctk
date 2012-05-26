@@ -107,7 +107,7 @@ class TcpClient(object):
         self.socket.shutdown(1)
         time.sleep(wait)
         try:
-            self.socket.close() #seems to cause a problem, errno 9
+            self.socket.close()  # seems to cause a problem: errno 9
         except Exception:
             pass
 
@@ -245,18 +245,18 @@ class IrcWrapper(object):
 
     def _recv(self, reconnect_wait=5.0):
         '''This internal method pulls data from the connection's input queue.
-        It then places this information in a local input buffer and loops over 
+        It then places this information in a local input buffer and loops over
         this buffer, line by line, parsing it via `_parse_line()`.
 
-        Parsed lines are stored in `self.prefix`, 'self.command', and 
+        Parsed lines are stored in `self.prefix`, 'self.command', and
         'self.args'.
 
-        In this loop we check to see if the connection has been properly 
-        registered with the server and if so loop through the channels defined 
+        In this loop we check to see if the connection has been properly
+        registered with the server and if so loop through the channels defined
         in `self.channels`, sending a JOIN command for each respectively.
 
-        Here we use `time.sleep` to sleep `wait`-number of seconds. This 
-        prevents the threads from running all the time and consequently 
+        Here we use `time.sleep` to sleep `wait`-number of seconds. This
+        prevents the threads from running all the time and consequently
         maxing out the CPU.
         '''
 
@@ -264,25 +264,28 @@ class IrcWrapper(object):
             self.inp_buffer += self.connection.inp.get()
             while '\r\n' in self.inp_buffer and not self.connection.shutdown:
                 with self.lock:
-                    self.line, self.inp_buffer = self.inp_buffer.split('\r\n', 1)
-                    self.prefix, self.command, self.args = self._parse_line(self.line)
+                    self.line, self.inp_buffer = \
+                            self.inp_buffer.split('\r\n', 1)
+
+                    self.prefix, self.command, self.args = \
+                            self._parse_line(self.line)
 
                     self.sender = self.args[0]
                     self.message = self.args[-1]
 
-                    self.context = {
-                            'prefix' : self.prefix, 
-                            'command' : self.command, 
-                            'args' : self.args,
-                            'sender': self.sender if self.args else '',
-                            'user': self.prefix.rsplit('!', 1)[0],
-                            'hostmask': self.prefix.rsplit('!', 1)[-1],
-                            'message': self.message if self.args else '',
-                            'stale': False,
-                            }
+                    self.context = \
+                            {'prefix': self.prefix,
+                             'command': self.command,
+                             'args': self.args,
+                             'sender': self.sender if self.args else '',
+                             'user': self.prefix.rsplit('!', 1)[0],
+                             'hostmask': self.prefix.rsplit('!', 1)[-1],
+                             'message': self.message if self.args else '',
+                             'stale': False}
 
                     if 'ERROR :Closing link:' in self.line:
-                        self.connection.logger.error('Connection lost, reconnecting.')
+                        error = 'Connection lost, reconnecting.'
+                        self.connection.logger.error(error)
                         self.connection.reconnect(reconnect_wait)
                         self.connection.inp.put('RECONNECT :server\r\n')
                         reconnect_wait *= reconnect_wait
@@ -299,7 +302,7 @@ class IrcWrapper(object):
                         self._register()
 
     def _parse_line(self, line):
-        '''This internal method takes a line as recieved from the IRC server 
+        '''This internal method takes a line as recieved from the IRC server
         and parses it appropriately.
 
         Returns `prefix`, `command`, `args`.
@@ -325,9 +328,9 @@ class IrcWrapper(object):
         return prefix, command, args
 
     def _send_line(self, line):
-        '''This internal method takes one parameter, `lines`, loops over it 
-        and sends each element directly to the `_send()` loop. This is used 
-        for sending raw messages to the server. Not for use outside of the 
+        '''This internal method takes one parameter, `lines`, loops over it
+        and sends each element directly to the `_send()` loop. This is used
+        for sending raw messages to the server. Not for use outside of the
         scope of this class!
 
         This method is not rate-limited. Use with caution.
@@ -336,14 +339,14 @@ class IrcWrapper(object):
         self.out_buffer += line + '\r\n'
 
     def _send_lines(self, lines):
-        '''This internal method takes one parameter, `lines`, loops over it 
-        and sends each element directly to the `_send()` loop. This is used 
-        for sending raw messages to the server. Not for use outside of the 
+        '''This internal method takes one parameter, `lines`, loops over it
+        and sends each element directly to the `_send()` loop. This is used
+        for sending raw messages to the server. Not for use outside of the
         scope of this class!
 
-        The a `rate` of lines to send may be specified, defaults to 5.0. This 
-        corresponds to the `per` parameter, which detauls to 20.0. So a rate 
-        of 5 lines per 20 seconds is the default, i.e. no more than 5 lines 
+        The a `rate` of lines to send may be specified, defaults to 5.0. This
+        corresponds to the `per` parameter, which detauls to 20.0. So a rate
+        of 5 lines per 20 seconds is the default, i.e. no more than 5 lines
         in 20 seconds.
         '''
 
@@ -351,9 +354,9 @@ class IrcWrapper(object):
             self.out_buffer += line + '\r\n'
 
     def run(self):
-        '''This method sets up the connection by sending the USER command to 
-        the server we are connecting to. Once our client is acknowledged and 
-        properly registered with the server we can loop through 
+        '''This method sets up the connection by sending the USER command to
+        the server we are connecting to. Once our client is acknowledged and
+        properly registered with the server we can loop through
         `self.channels` and join the respective channels therein.
         '''
 
@@ -362,11 +365,11 @@ class IrcWrapper(object):
         thread.start_new_thread(self._send, ())
 
     def send_command(self, command, args=[], prefix=None):
-        '''This method provides a wrapper to an IRC command. It takes two 
-        parameters, `command` and `args` which relate to their respective IRC 
+        '''This method provides a wrapper to an IRC command. It takes two
+        parameters, `command` and `args` which relate to their respective IRC
         equivalents.
 
-        The arguments are concatenated to the command and then sent along to 
+        The arguments are concatenated to the command and then sent along to
         the connection queue.
         '''
 
@@ -395,6 +398,7 @@ class IrcWrapper(object):
             recipient = self.context['user']
 
         messages = []
+
         def handle_long_message(message):
             message, extra = message[:line_limit], message[line_limit:]
             messages.append(message)
@@ -422,4 +426,3 @@ class IrcWrapper(object):
         self.send_command('QUIT', ':' + message)
         self.connection.close()
         time.sleep(wait)
-

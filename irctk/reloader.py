@@ -1,7 +1,7 @@
 '''
     irctk.reloader
     --------------
-    
+
     Logic for dyanmic reloading upon file changes.
 '''
 
@@ -22,10 +22,10 @@ class ReloadHandler(threading.Thread):
         self.start()
 
     def _reloader_loop(self, wait=1.0):
-        '''This reloader is based off of the Flask reloader which in turn is 
+        '''This reloader is based off of the Flask reloader which in turn is
         based off of the CherryPy reloader.
 
-        This internal method takes on parameter, `wait`, the wait time given 
+        This internal method takes on parameter, `wait`, the wait time given
         in seconds. The default value is set to one second.
         '''
 
@@ -49,23 +49,23 @@ class ReloadHandler(threading.Thread):
         self._reloader(fnames, wait=wait)
 
     def _reloader(self, fnames, wait):
-        '''This reloader is based off of the Flask reloader which in turn is 
+        '''This reloader is based off of the Flask reloader which in turn is
         based off of the CherryPy reloader.
 
-        This internal method takes two paramters, `fnames` and `wait.` Here 
-        we loop over a list of file names, `fnames`, using `os.stat` to 
-        determine if the mtime of the file has been changed. If so we use 
+        This internal method takes two paramters, `fnames` and `wait.` Here
+        we loop over a list of file names, `fnames`, using `os.stat` to
+        determine if the mtime of the file has been changed. If so we use
         `imp.load_source` to reload the module.
 
-        The `fnames` parameter should be a list of files names to be parsed by 
+        The `fnames` parameter should be a list of files names to be parsed by
         the reloader.
 
-        A callback function, `callback` may be provided as a function to be 
+        A callback function, `callback` may be provided as a function to be
         called when the file is reloaded.
 
-        The `wait` parameter specifies the time in seconds to run 
+        The `wait` parameter specifies the time in seconds to run
         `time.sleep()`.
-        ''' 
+        '''
 
         mtimes = {}
 
