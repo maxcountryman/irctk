@@ -5,6 +5,8 @@ IrcTK
 A simple framework for writing IRC applications.
 '''
 
+import irctk
+
 import os
 import sys
 
@@ -24,7 +26,7 @@ if sys.argv[-1] == 'test':
 
 setup(
     name='IrcTK',
-    version='0.2.3',
+    version=irctk.__version__,
     url='https://github.com/maxcountryman/irctk',
     license='BSD',
     author='Max Countryman',

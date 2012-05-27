@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''
     irctk.plugins
     -------------
@@ -18,14 +19,20 @@ class Context(object):
 
 
 class PluginHandler(object):
-    def __init__(self, config, logger, reply_method):
-        self.config = config
-        self.logger = logger
-        self.thread_pool = \
-                ThreadPool(self.config['MIN_WORKERS'], logger=self.logger)
-        self._reply = reply_method
+    def __init__(self, bot):
+        self.bot = bot
+        self.config = self.bot.config
+        self.logger = self.bot.logger
+        self._reply = self.bot.reply
 
-    def add_plugin(self, hook, func, command=True, event=False):
+    @property
+    def thread_pool(self):
+        thread_pool = \
+                ThreadPool(self.config['MIN_WORKERS'], logger=self.logger)
+        return thread_pool
+
+    def _add_plugin(self, hook, func, command=True, event=False, regex=False):
+        '''Allows plugins to be added in the scope of a function.'''
         plugin = {}
 
         plugin.setdefault('hook', hook)
@@ -40,22 +47,32 @@ class PluginHandler(object):
             else:
                 plugin['funcs'] += [func]
 
+        if command:
+            plugin_list = 'PLUGINS'
+
         if event:
             command = False  # don't process as a command and an event
             plugin_list = 'EVENTS'
 
+        if regex:
+            command = False
+            plugin_list = 'REGEX'
+
+        self.update_plugin(plugin, plugin_list)
+
+    def _remove_plugin(self, hook, func, command=True, event=False,
+            regex=False):
+        '''Allows plugins to be removed in the scope of a function.'''
         if command:
             plugin_list = 'PLUGINS'
 
-        self.update_plugins(plugin, plugin_list)
-
-    def remove_plugin(self, hook, func, command=True, event=False):
         if event:
-            command = False
+            command = False  # don't process as a command and an event
             plugin_list = 'EVENTS'
 
-        if command:
-            plugin_list = 'PLUGINS'
+        if regex:
+            command = False
+            plugin_list = 'REGEX'
 
         plugin_list = self.config[plugin_list]
 
@@ -69,17 +86,12 @@ class PluginHandler(object):
                 if not existing_plugin['funcs']:
                     plugin_list.remove(existing_plugin)
 
-    def update_plugins(self, plugin, plugin_list):
-        '''This internal method updates a given list containing plugins,
-        `plugin_list`, with a plugin dictionary object, `plugin`.
-
-        Usually used to update the `PLUGINS` or `EVENTS` list in the
-        configuration dict.
-        '''
-
+    def _update_plugin(self, plugin, plugin_list):
+        # contruct plugin list on bot config object if necessary
         if not self.config.get(plugin_list):
             self.config[plugin_list] = []
 
+        # retrive the specified plugin list
         plugin_list = self.config[plugin_list]
 
         for i, existing_plugin in enumerate(plugin_list):
@@ -93,17 +105,9 @@ class PluginHandler(object):
         if not plugin['hook'] in iter_list_hooks():
             plugin_list.append(plugin)
 
-    def enqueue_plugin(self, plugin, hook, context):
-        '''This method takes a plugin, hook, and context, as
-        `plugin`, `hook`, and `context`. Checking to see if the context is
-        equivalent to the hook or begins with the hook plus a space, in the
-        second case, indicating a plugin passed with arguments. If such
-        conditions are met the plugin is enqueued in the thread pool.
-        '''
-
-        if context == hook or \
-                      context.startswith(hook + ' ') or \
-                      re.search(hook, context):
+    def enqueue_plugin(self, plugin, hook, context, regex=False):
+        if (regex and re.search(hook, context)) or \
+           (context == hook or context.startswith(hook + ' ')):
             plugin_args = \
                     plugin['context']['message'].split(hook, 1)[-1].strip()
             plugin_context = Context(plugin['context'], plugin_args)
@@ -123,7 +127,6 @@ class PluginHandler(object):
         if the plugin function does return a message, that message is
         formatted and sent back to the server via `cls.reply`.
         '''
-
         for func in plugin['funcs']:
             takes_args = inspect.getargspec(func).args
 
@@ -142,44 +145,3 @@ class PluginHandler(object):
 
             if message:
                 self._reply(message, plugin_context.line, action, notice)
-
-    def filter_plugin_lists(self, plugin_lists, filename):
-        filtered_lists = []
-        for plugin_list in plugin_lists:
-            filtered_list = self._filter_plugin_list(plugin_list, filename)
-            filtered_lists.append(filtered_list)
-        return filtered_lists
-
-    def _filter_plugin_list(self, plugin_list, filename):
-
-        def func_is_in_file(func, filename):
-            return inspect.getabsfile(func) == filename
-
-        filtered_plugins = {}
-        for i, plugin in enumerate(plugin_list):
-
-            hook = plugin['hook']
-            funcs = plugin['funcs']
-            for j, func in enumerate(funcs):
-                if func_is_in_file(func, filename):
-                    if not hook in filtered_plugins:
-                        filtered_plugins[hook] = []
-                    filtered_plugins[hook].append(funcs.pop(j))
-
-            if not funcs:  # no functions, so delete the hook
-                del plugin_list[i]
-
-        return filtered_plugins
-
-    def restore_plugin_lists(self, plugin_lists, filtered_lists):
-        for plugin_list in plugin_lists:
-            #plugin_list = [] # reset the list
-            for filtered_list in filtered_lists:
-                self._restore_plugin_list(plugin_list, filtered_list)
-
-    def _restore_plugin_list(self, plugin_list, filtered_list):
-        for plugin in plugin_list:
-            for hook, funcs in filtered_list.items():
-                if hook not in plugin_list:
-                    plugin[hook] = []
-                plugin[hook] = funcs

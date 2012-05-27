@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''
     irctk.config
     ------------
@@ -10,7 +11,7 @@ import os
 
 
 class Config(dict):
-    def __init__(self, root_path, defaults=None):
+    def __init__(self, bot, root_path, defaults=None):
         dict.__init__(self, defaults or {})
         self.root_path = root_path
 

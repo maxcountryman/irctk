@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''
     irctk.ircclient
     ---------------
@@ -11,7 +12,6 @@
     incomplete but covers much of the core functionality needed to make and
     sustain connections.
 '''
-
 
 import socket
 import thread
@@ -281,7 +281,7 @@ class IrcWrapper(object):
                              'user': self.prefix.rsplit('!', 1)[0],
                              'hostmask': self.prefix.rsplit('!', 1)[-1],
                              'message': self.message if self.args else '',
-                             'line': self.line,
+                             'raw': self.line,
                              'stale': False}
 
                     if 'ERROR :Closing link:' in self.line:
@@ -336,7 +336,6 @@ class IrcWrapper(object):
 
         This method is not rate-limited. Use with caution.
         '''
-
         self.out_buffer += line + '\r\n'
 
     def _send_lines(self, lines):
@@ -350,7 +349,6 @@ class IrcWrapper(object):
         of 5 lines per 20 seconds is the default, i.e. no more than 5 lines
         in 20 seconds.
         '''
-
         for line in lines:
             self.out_buffer += line + '\r\n'
 
@@ -360,7 +358,6 @@ class IrcWrapper(object):
         properly registered with the server we can loop through
         `self.channels` and join the respective channels therein.
         '''
-
         self._register()
         thread.start_new_thread(self._recv, ())
         thread.start_new_thread(self._send, ())
@@ -373,7 +370,6 @@ class IrcWrapper(object):
         The arguments are concatenated to the command and then sent along to
         the connection queue.
         '''
-
         command = command + ' ' + ''.join(args)
         if prefix:
             command = prefix + command
@@ -381,8 +377,6 @@ class IrcWrapper(object):
         self._send_lines([command])
 
     def send_message(self, recipient, message, action=False, notice=False):
-        '''TODO'''
-
         if action:
             self.send_action(recipient, message)
         elif notice:
@@ -390,40 +384,14 @@ class IrcWrapper(object):
         else:
             self.send_command('PRIVMSG', [recipient + ' :' + message])
 
-    def send_reply(self, message, action=False, line_limit=400):
-        '''Warning: Deprecated. Use the reply method in bot.py instead.'''
-
-        if self.context['sender'].startswith('#'):
-            recipient = self.context['sender']
-        else:
-            recipient = self.context['user']
-
-        messages = []
-
-        def handle_long_message(message):
-            message, extra = message[:line_limit], message[line_limit:]
-            messages.append(message)
-            if extra:
-                handle_long_message(extra)
-        handle_long_message(message)
-
-        for message in messages:
-            self.send_message(recipient, message, action)
-
     def send_notice(self, recipient, message):
-        '''TODO'''
-
         self.send_command('NOTICE', [recipient + ' :' + message])
 
     def send_action(self, recipient, message):
-        '''TODO'''
-
         message = chr(1) + 'ACTION ' + message + chr(1)
         self.send_message(recipient, message)
 
     def quit(self, message='kaa', wait=1.0):
-        '''TODO'''
-
         self.send_command('QUIT', ':' + message)
         self.connection.close()
         time.sleep(wait)

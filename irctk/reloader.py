@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''
     irctk.reloader
     --------------
@@ -13,13 +14,30 @@ import imp
 
 
 class ReloadHandler(threading.Thread):
-    def __init__(self, plugin_lists, plugin_handler, logger):
+    def __init__(self, bot):
         threading.Thread.__init__(self)
-        self.plugin_lists = plugin_lists
-        self.plugin = plugin_handler
-        self.logger = logger
+
+        self.bot = bot
+        self.plugin = self.bot.plugin
+        self.logger = self.bot.logger
+
         self.daemon = True
         self.start()
+
+    def _iter_module_files(self):
+        for module in sys.modules.values():
+            filename = getattr(module, '__file__', None)
+            if filename:
+                old = None
+                while not os.path.isfile(filename):
+                    old = filename
+                    filename = os.path.dirname(filename)
+                    if filename == old:
+                        break
+                else:
+                    if filename[-4:] in ('.pyc', '.pyo'):
+                        filename = filename[:-1]
+                    yield filename
 
     def _reloader(self, wait=1.0):
         '''This reloader is based off of the Flask reloader which in turn is
@@ -27,58 +45,45 @@ class ReloadHandler(threading.Thread):
         '''
 
         mtimes = {}
+        root_path = self.bot.root_path
 
         while True:
-            def iter_module_files():
-                for module in sys.modules.values():
-                    filename = getattr(module, '__file__', None)
-                    if filename:
-                        old = None
-                        while not os.path.isfile(filename):
-                            old = filename
-                            filename = os.path.dirname(filename)
-                            if filename == old:
-                                break
-                        else:
-                            if filename[-4:] in ('.pyc', '.pyo'):
-                                filename = filename[:-1]
-                            yield filename
-
             fnames = []
-            fnames.extend(iter_module_files())
+            fnames.extend(self._iter_module_files())
 
             for filename in fnames:
                 try:
                     mtime = os.stat(filename).st_mtime
                 except OSError, e:
-                    self.logger.error('Reloader error: ' + e)
+                    self.logger.error('Reloader error: ' + str(e))
                     continue
 
                 old_time = mtimes.get(filename)
+
+                mtimes[filename] = mtime
+
                 if old_time is None:
-                    mtimes[filename] = mtime
+                    continue
                 elif mtime > old_time:
-                    mtimes[filename] = mtime
+                    self.logger.info('Changes detected; reloading')
 
-                    self.logger.info('Changes detected; reloading ' + filename)
-                    filtered_lists = \
-                            self.plugin.filter_plugin_lists(self.plugin_lists,
-                                                            filename)
+                    local_fnames = \
+                        set([fname for fname in fnames if root_path in fname])
 
-                    f = os.path.split(filename)[-1]
-                    f = os.path.splitext(f)[0]
+                    # make sure we load __init__ first
+                    local_fnames = sorted(list(local_fnames))
 
-                    try:
-                        imp.load_source(f, filename)
-                    except Exception, e:
-                        self.logger.error('Failed loading plugin: ' + str(e))
-                        continue
-                    finally:
-                        mtimes[filename] = mtime
+                    # reload local modules
+                    for fname in local_fnames:
+                        f = os.path.split(fname)[-1]
+                        f = os.path.splitext(f)[0]
 
-                    if filtered_lists:
-                        self.plugin.restore_plugin_lists(self.plugin_lists,
-                                                         filtered_lists)
+                        try:
+                            imp.load_source(f, fname)
+                        except Exception, e:
+                            self.logger.error('Reload failed: ' + str(e))
+                            continue
+
             time.sleep(wait)
 
     def run(self):

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''
     irctk.bot
     ---------
@@ -18,10 +19,22 @@ from irctk.ircclient import TcpClient, IrcWrapper
 
 
 class Bot(object):
+    # used to track the instance of the Bot class
     _instance = None
-    root_path = os.path.abspath('')
-    logger = create_logger()
 
+    # initialize the logger as None
+    logger = None
+
+    # initlialize the config as None
+    config = None
+
+    # initalize the reloader as None
+    reloader = None
+
+    # set our root path
+    root_path = os.path.abspath('')
+
+    # base configuration
     default_config = {'SERVER': '',
                       'PORT': 6667,
                       'PASSWORD': None,
@@ -38,13 +51,26 @@ class Bot(object):
                       'CMD_PREFIX': '.'}
 
     def __init__(self):
-        self.config = Config(self.root_path, self.default_config)
-        self.plugin = PluginHandler(self.config, self.logger, self.reply)
+        if self.logger is None:
+            self.logger = create_logger()
+
+        # configure the bot instance
+        if self.config is None:
+            self.config = Config(self, self.root_path, self.default_config)
+        else:
+            self.config['PLUGINS'] = []
+            self.config['EVENTS'] = []
+            self.config['REGEX'] = []
+
+        # initialize the plugin handler
+        self.plugin = PluginHandler(self)
+
+        # initalize the reload handler
+        if self.reloader is None:
+            self.reloader = ReloadHandler(self)
 
     def __new__(cls, *args, **kwargs):
-        '''Here we override the `__new__` method in order to achieve a
-        singleton effect. In this way we can reload instances of the object
-        without having to worry about which instance we reference.'''
+        '''Overload creation of new instances to create singleton effect.'''
         if not cls._instance:
             cls._instance = super(Bot, cls).__new__(cls, *args, **kwargs)
         return cls._instance
@@ -79,6 +105,7 @@ class Bot(object):
         True.
         '''
         prefix = self.config['CMD_PREFIX']
+
         while True:
             time.sleep(wait)
 
@@ -86,9 +113,19 @@ class Bot(object):
                 args = self.irc.context.get('args')
                 command = self.irc.context.get('command')
                 message = self.irc.context.get('message')
-                line = self.irc.context.get('line')
+                raw = self.irc.context.get('raw')
 
                 while not self.context_stale and args:
+
+                    # process regex
+                    for regex in self.config['REGEX']:
+                        regex['context'] = dict(self.irc.context)
+                        hook = regex['hook']
+                        self.plugin.enqueue_plugin(regex,
+                                                   hook,
+                                                   raw,
+                                                   regex=True)
+
                     # process for a message
                     if message.startswith(prefix):
                         for plugin in self.config['PLUGINS']:
@@ -102,13 +139,6 @@ class Bot(object):
                             event['context'] = dict(self.irc.context)
                             hook = event['hook']
                             self.plugin.enqueue_plugin(event, hook, command)
-
-                    # process regex
-                    for regex in self.config['REGEX']:
-                        regex['context'] = dict(self.irc.context)
-                        hook = regex['hook']
-                        self.plugin.enqueue_plugin(regex, hook, line)
-
 
                     # irc context consumed; mark it as such
                     self.irc.context['stale'] = True
@@ -136,7 +166,7 @@ class Bot(object):
         def wrapper(func):
             plugin.setdefault('hook', func.func_name)
             plugin['funcs'] = [func]
-            self.plugin.update_plugins(plugin, 'PLUGINS')
+            self.plugin._update_plugin(plugin, 'PLUGINS')
             return func
 
         if kwargs or not inspect.isfunction(hook):
@@ -159,7 +189,7 @@ class Bot(object):
 
         def wrapper(func):
             plugin['funcs'] = [func]
-            self.plugin.update_plugins(plugin, 'EVENTS')
+            self.plugin._update_plugin(plugin, 'EVENTS')
             return func
 
         plugin['hook'] = hook
@@ -167,11 +197,12 @@ class Bot(object):
         return wrapper
 
     def regex(self, hook, **kwargs):
+        '''Takes a regular expression as a hook.'''
         plugin = {}
 
         def wrapper(func):
             plugin['funcs'] = [func]
-            self.plugin.update_plugins(plugin, 'REGEX')
+            self.plugin._update_plugin(plugin, 'REGEX')
             return func
 
         plugin['hook'] = hook
@@ -179,47 +210,55 @@ class Bot(object):
         return wrapper
 
     def add_command(self, hook, func):
-        self.plugin.add_plugin(hook, func, command=True)
+        self.plugin._add_plugin(hook, func, command=True)
 
     def add_event(self, hook, func):
-        self.plugin.add_plugin(hook, func, event=True)
+        self.plugin._add_plugin(hook, func, event=True)
+
+    def add_regex(self, hook, func):
+        self.plugin._add_plugin(hook, func, regex=True)
 
     def remove_command(self, hook, func):
-        self.plugin.remove_plugin(hook, func, command=True)
+        self.plugin._remove_plugin(hook, func, command=True)
 
     def remove_event(self, hook, func):
-        self.plugin.remove_plugin(hook, func, event=True)
+        self.plugin._remove_plugin(hook, func, event=True)
+
+    def remove_regex(self, hook, func):
+        self.plugin._remove_plugin(hook, func, regex=True)
 
     def reply(self, message, context, action=False, notice=False,
-            line_limit=400):
-        if context['sender'].startswith('#'):
-            recipient = context['sender']
-        else:
-            recipient = context['user']
+            recipient=None, line_limit=400):
 
-        messages = []
+        # conditionally set the recipient automatically
+        if recipient is None:
+            if context['sender'].startswith('#'):
+                recipient = context['sender']
+            else:
+                recipient = context['user']
 
-        def handle_long_message(message):
+        def messages(message):
             message, extra = message[:line_limit], message[line_limit:]
-            messages.append(message)
+            yield message
             if extra:
-                handle_long_message(extra)
+                for message in messages(extra):
+                    yield message
 
-        handle_long_message(message)
-
-        for message in messages:
+        for message in messages(message):
             self.irc.send_message(recipient, message, action, notice)
 
-    def run(self, wait=0.01):
-        self._create_connection()  # updates to the latest config
+    def run(self, wait=0.1):
+        # create connection
+        self._create_connection()
 
+        # connect
         self.connection.connect()
+
+        # start the irc wrapper
         self.irc.run()
 
+        # start the input parsing loop in a new thread
         thread.start_new_thread(self._parse_input, ())
-
-        plugin_lists = [self.config['PLUGINS'], self.config['EVENTS']]
-        self.reloader = ReloadHandler(plugin_lists, self.plugin, self.logger)
 
         while True:
             time.sleep(wait)
