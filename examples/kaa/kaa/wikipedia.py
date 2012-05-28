@@ -16,7 +16,7 @@ search_url = api_prefix + '?action=opensearch&format=xml'
 paren_re = re.compile('\s*\(.*\)$')
 
 wiki_re = '(\http|\https)(\://*.[a-zA-Z]{0,1}\.*wikipedia.+?)' \
-           '(\com/wiki/|\org/wiki/)([^\s]+)'
+     '(\com/wiki/|\org/wiki/)([^\s]+)'
 wiki_re = re.compile(wiki_re)
 
 
@@ -55,7 +55,7 @@ def wiki_search(query):
 
 
 @bot.regex(wiki_re)
-def wiki_re(context):
+def wiki_find(context):
     query = context.line['regex_search'].groups()[-1]
     desc, _ = wiki_search(query)
     return desc
