@@ -11,9 +11,9 @@ import locale
 
 import requests
 
-youtube_re = (r'(?:youtube.*?(?:v=|/v/)|youtu\.be/|yooouuutuuube.*?id=)'
-              '([-_a-z0-9]+)', re.I)
-youtube_re = re.compile(*youtube_re)
+re = (r'(?:youtube.*?(?:v=|/v/)|youtu\.be/|yooouuutuuube.*?id=)([-_a-z0-9]+)',
+      re.I)
+youtube_re = re.compile(*re)
 
 base_url = 'http://gdata.youtube.com/feeds/api/'
 url = base_url + 'videos/{0}?v=2&alt=jsonc'
