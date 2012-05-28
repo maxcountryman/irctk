@@ -10,6 +10,7 @@ import inspect
 import re
 
 from irctk.threadpool import ThreadPool
+from irctk.utils import cached_property
 
 
 class Context(object):
@@ -25,7 +26,7 @@ class PluginHandler(object):
         self.logger = self.bot.logger
         self._reply = self.bot.reply
 
-    @property
+    @cached_property
     def thread_pool(self):
         thread_pool = \
                 ThreadPool(self.config['MIN_WORKERS'], logger=self.logger)
