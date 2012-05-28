@@ -66,9 +66,6 @@ def get_video_description(vid_id):
 
 @bot.regex(youtube_re)
 def youtube_url(context):
-    print 'test'
-    print context.line['regex_search']
-    print context.line['regex_search'].groups()
     vid_id = context.line['regex_search'].groups()[0]
     return get_video_description(vid_id)
 
