@@ -7,6 +7,7 @@
 '''
 
 import os
+import re
 import time
 import inspect
 import thread
@@ -119,8 +120,12 @@ class Bot(object):
 
                     # process regex
                     for regex in self.config['REGEX']:
-                        regex['context'] = dict(self.irc.context)
                         hook = regex['hook']
+                        search = re.search(hook, raw)
+                        if not search:
+                            continue
+                        regex['context'] = dict(self.irc.context)
+                        regex['context']['regex_search'] = search
                         self.plugin.enqueue_plugin(regex,
                                                    hook,
                                                    raw,

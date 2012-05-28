@@ -106,14 +106,20 @@ class PluginHandler(object):
             plugin_list.append(plugin)
 
     def enqueue_plugin(self, plugin, hook, context, regex=False):
-        if (regex and re.search(hook, context)) or \
-           (context == hook or context.startswith(hook + ' ')):
+        search = None
+        if regex:
+            search = re.search(hook, context)
+            plugin_args = plugin['context']['message']
+            plugin['context']['regex_search'] = search
+        elif not regex and (context == hook or context.startswith(hook + ' ')):
             plugin_args = \
                     plugin['context']['message'].split(hook, 1)[-1].strip()
-            plugin_context = Context(plugin['context'], plugin_args)
+        else:
+            return
 
-            task = (self.dequeue_plugin, plugin, plugin_context)
-            self.thread_pool.enqueue_task(*task)
+        plugin_context = Context(plugin['context'], plugin_args)
+        task = (self.dequeue_plugin, plugin, plugin_context)
+        self.thread_pool.enqueue_task(*task)
 
     def dequeue_plugin(self, plugin, plugin_context):
         '''This method assumes that a plugin and plugin context are
