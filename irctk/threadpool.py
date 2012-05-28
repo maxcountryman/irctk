@@ -65,10 +65,10 @@ class ThreadPool(threading.Thread):
     function should serve as some kind of callback.
     '''
 
-    def __init__(self, min_workers, logger=None, wait=DEFAULT_SLEEP):
+    def __init__(self, min_workers=None, logger=None, wait=DEFAULT_SLEEP):
         threading.Thread.__init__(self)
         self.tasks = Queue.Queue()
-        self.min_workers = min_workers
+        self.min_workers = min_workers or 3
         self.workers = 0
         self.logger = logger
         self.wait = wait
@@ -82,13 +82,9 @@ class ThreadPool(threading.Thread):
     def enqueue_task(self, func, *args, **kwargs):
         self.tasks.put((func, args, kwargs))
 
-    @property
-    def too_few_workers(self):
-        return self.workers < self.min_workers
-
     def run(self):
         while True:
             time.sleep(self.wait)
 
-            if self.too_few_workers:
+            if self.workers < self.min_workers:
                 self._spawn_worker()
