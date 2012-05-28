@@ -24,7 +24,7 @@ def wikipedia(context):
     '''.wikipedia <query>'''
     query = quote(context.args)
     r = requests.get(search_url, params=dict(search=query))
-    data = etree.fromstring(StringIO(r.content))
+    data = etree.fromstring(StringIO(r.text))
 
     ns = '{http://opensearch.org/searchsuggest2}'
     items = data.findall(ns + 'Section/' + ns + 'Item')
