@@ -15,13 +15,12 @@ search_url = api_prefix + '?action=opensearch&format=xml'
 
 paren_re = re.compile('\s*\(.*\)$')
 
+wiki_re = '(\http|\https)(\://*.[a-zA-Z]{0,1}\.*wikipedia.+?)' \
+           '(\com/wiki/|\org/wiki/)([^\s]+)'
 
-@bot.command('wi')
-@bot.command('wiki')
-@bot.command
-def wikipedia(context):
-    '''.wikipedia <query>'''
-    r = requests.get(search_url, params=dict(search=context.args))
+
+def wiki_search(query):
+    r = requests.get(search_url, params=dict(search=query))
     data = etree.fromstring(r.content)
 
     ns = '{http://opensearch.org/searchsuggest2}'
@@ -52,3 +51,17 @@ def wikipedia(context):
         desc = desc[:300] + '...'
 
     return '{0} -- {1}'.format(desc, quote(url, ':/'))
+
+
+@bot.regex(wiki_re)
+def wiki_re(context):
+    query = context.line['regex_search'].groups()[-1]
+    return wiki_search(query)
+
+
+@bot.command('wi')
+@bot.command('wiki')
+@bot.command
+def wikipedia(context):
+    '''.wikipedia <query>'''
+    return wiki_search(context.args)
