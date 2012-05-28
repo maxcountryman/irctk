@@ -29,6 +29,9 @@ class Bot(object):
     # initlialize the config as None
     config = None
 
+    # initalize the plugin as None
+    plugin = None
+
     # initalize the reloader as None
     reloader = None
 
@@ -64,7 +67,8 @@ class Bot(object):
             self.config['REGEX'] = []
 
         # initialize the plugin handler
-        self.plugin = PluginHandler(self)
+        if self.plugin is None:
+            self.plugin = PluginHandler(self)
 
         # initalize the reload handler
         if self.reloader is None:
