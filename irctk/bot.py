@@ -21,7 +21,7 @@ from irctk.ircclient import TcpClient, IrcWrapper
 
 class Bot(object):
     # used to track the instance of the Bot class
-    _instance = None
+    __instance = None
 
     # initialize the logger as None
     logger = None
@@ -74,11 +74,11 @@ class Bot(object):
         if self.reloader is None:
             self.reloader = ReloadHandler(self)
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls):
         '''Overload creation of new instances to create singleton effect.'''
-        if not cls._instance:
-            cls._instance = super(Bot, cls).__new__(cls, *args, **kwargs)
-        return cls._instance
+        if not cls.__instance:
+            __instance = type.__new__(cls)
+        return __instance
 
     def _create_connection(self):
         self.connection = TcpClient(self.config['SERVER'],
