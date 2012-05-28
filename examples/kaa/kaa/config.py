@@ -5,7 +5,7 @@ class Config(object):
     TIMEOUT = 300
     NICK = 'kaa'
     REALNAME = 'kaa the python'
-    CHANNELS = ['voxinfinitus', '#testing']
+    CHANNELS = ['#voxinfinitus', '#testing']
 
     # admin list
     ADMINS = ['doraemon!~max@staff.voxinfinitus']

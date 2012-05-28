@@ -1,5 +1,6 @@
 from kaa import bot
 
+from StringIO import StringIO
 from itertools import groupby
 from lxml import html
 
@@ -19,8 +20,8 @@ def get_db_connection(name=None):
 
 
 def shortener(url):
-    url = 'https://api-ssl.bitly.com/v3/shorten'
-    r = requests.get(url, params=dict(longUrl=url,
+    api_url = 'https://api-ssl.bitly.com/v3/shorten'
+    r = requests.get(api_url, params=dict(longUrl=url,
                                       format='json',
                                       login=BITLY_LOGIN,
                                       apiKey=BITLY_KEY))
@@ -93,6 +94,8 @@ def raw(context):
 def regex_test(context):
     if context.args == '?foo':
         return 'bar'
+    if 'ass state' in context.args:
+        return 'http://youtube.com/watch?v=dTI0KDuQl_4'
     if 'http' in context.args:
         url = context.args.split('?')[1]
         return shortener(url)
@@ -111,12 +114,17 @@ def shorten(context):
 
     titles_and_urls = []
     for url in urls:
+        if 'youtube' in url:
+            continue
+        if 'youtu.be' in url:
+            continue
+
         try:
             r = requests.get(url)
         except Exception:
             return 'unable to open url: ' + url
 
-        parsed_page = html.parse(r.content)
+        parsed_page = html.parse(StringIO(r.content))
         title = parsed_page.find('.//title')
         url = shortener(url)
 
