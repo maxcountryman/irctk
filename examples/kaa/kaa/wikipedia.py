@@ -3,7 +3,6 @@
 from kaa import bot
 
 from urllib import quote
-from StringIO import StringIO
 
 from lxml import etree
 
@@ -22,9 +21,8 @@ paren_re = re.compile('\s*\(.*\)$')
 @bot.command
 def wikipedia(context):
     '''.wikipedia <query>'''
-    query = quote(context.args)
-    r = requests.get(search_url, params=dict(search=query))
-    data = etree.fromstring(StringIO(r.text))
+    r = requests.get(search_url, params=dict(search=context.args))
+    data = etree.fromstring(r.content)
 
     ns = '{http://opensearch.org/searchsuggest2}'
     items = data.findall(ns + 'Section/' + ns + 'Item')
@@ -43,7 +41,7 @@ def wikipedia(context):
     if 'may refer to' in desc:
         title, desc, url = extract(items[1])
 
-    title = paren_re.sub('', title)
+    title = '\x02' + paren_re.sub('', title) + '\x02 -- '
 
     if title.lower() not in desc.lower():
         desc = title + desc
