@@ -1,8 +1,11 @@
 from kaa import bot
 from kaa.utils import shortener
+from kaa.wikipedia import wiki_re, wiki_search
+from kaa.youtube import youtube_re, get_video_description
 
 from urllib import quote
 
+import re
 import json
 import requests
 
@@ -20,11 +23,28 @@ def search(query, kind='web'):
 @bot.command
 def google(context):
     data = search(context.args)
+
     if not data['responseData']['results']:
         return 'no results found'
     first_result = data['responseData']['results'][0]
+
+    url = first_result['unescapedUrl']
+
+    # special handling for Wikipedia
+    wiki = re.search(wiki_re, url)
+    if wiki:
+        desc, url = wiki_search(wiki.groups()[-1])
+        return '{0} -- {1}'.format(desc, url)
+
+    # special handling for YouTube
+    youtube = re.search(youtube_re, url)
+    if youtube:
+        vid_id = youtube.groups()[-1]
+        desc = get_video_description(vid_id)
+        return '{0} -- {1}'.format(desc, url)
+
     ret = first_result['titleNoFormatting'] + \
-          ' - ' + shortener(first_result['unescapedUrl'])
+          ' - ' + shortener(url)
     return ret
 
 
