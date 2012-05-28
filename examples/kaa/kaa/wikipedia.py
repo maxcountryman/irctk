@@ -50,13 +50,14 @@ def wiki_search(query):
     if len(desc) > 300:
         desc = desc[:300] + '...'
 
-    return '{0} -- {1}'.format(desc, quote(url, ':/'))
+    return desc, url
 
 
 @bot.regex(wiki_re)
 def wiki_re(context):
     query = context.line['regex_search'].groups()[-1]
-    return wiki_search(query)
+    desc, _ = wiki_search(query)
+    return desc
 
 
 @bot.command('wi')
@@ -64,4 +65,5 @@ def wiki_re(context):
 @bot.command
 def wikipedia(context):
     '''.wikipedia <query>'''
-    return wiki_search(context.args)
+    desc, url = wiki_search(context.args)
+    return '{0} -- {1}'.format(desc, quote(url, ':/'))
