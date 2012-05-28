@@ -1,4 +1,6 @@
 from kaa import bot
+from kaa.wikipedia import wiki_re
+from kaa.youtube import youtube_re
 
 from StringIO import StringIO
 from itertools import groupby
@@ -6,6 +8,7 @@ from lxml import html
 
 import json
 import sqlite3
+import re
 
 import requests
 
@@ -110,15 +113,18 @@ def shorten(context):
     if not contains_url:
         return
 
+    wiki = re.search(wiki_re, context.line['message'])
+    if wiki:
+        return
+
+    youtube = re.search(youtube_re, context.line['message'])
+    if youtube:
+        return
+
     urls = find_urls(message)
 
     titles_and_urls = []
     for url in urls:
-        if 'youtube' in url:
-            continue
-        if 'youtu.be' in url:
-            continue
-
         try:
             r = requests.get(url)
         except Exception:
