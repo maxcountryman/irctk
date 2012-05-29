@@ -2,8 +2,6 @@
 
 from kaa import bot
 
-from urllib import quote
-
 import re
 import json
 import time
@@ -31,7 +29,7 @@ def get_video_description(vid_id):
 
     data = data['data']
 
-    out = u'\x02{0}\x02'.format(data['title'].decode('utf-8'))
+    out = u'\x02{title}\x02'.format(**data['title'])
 
     if not data.get('duration'):
         return out
@@ -76,9 +74,7 @@ def youtube_url(context):
 def youtube(context):
     '.youtube <query>'
 
-    query = quote(context.args)
-
-    r = requests.get(search_api_url, params=dict(q=query))
+    r = requests.get(search_api_url, params=dict(q=context.args))
 
     data = json.loads(r.content)
 
