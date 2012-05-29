@@ -29,7 +29,7 @@ def get_video_description(vid_id):
 
     data = data['data']
 
-    out = u'\x02{title}\x02'.format(**data['title'])
+    out = '\x02{title}\x02'.format(**data['title'])
 
     if not data.get('duration'):
         return out
