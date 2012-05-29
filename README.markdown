@@ -27,6 +27,7 @@ probably already know what to do.
 Let's write a simple bot that queries Google when it sees the command
 '.google'. We'll start by configuring our application:
 
+```python
     # import the Bot object from IrcTK
     from irctk import Bot
 
@@ -49,6 +50,7 @@ Let's write a simple bot that queries Google when it sees the command
 
     # populate the configuration with our Config object
     bot.config.from_object(Config)
+```
 
 Now that our bot is setup and configured we can get to the fun part: writing
 plugins for it!
@@ -56,6 +58,7 @@ plugins for it!
 Plugins in IrcTK are functions that are registered via a decorator. For our bot
 we want to write a function that queries Google and gives us the first result.
 
+```python
     # the Google search API URL
     search_url = 'http://ajax.googleapis.com/ajax/services/search/web'
 
@@ -89,14 +92,16 @@ we want to write a function that queries Google and gives us the first result.
         # finally return the result to the channel or user the plugin was called
         # from
         return ret
-
+```
 
 And that's it! You've just written your first plugin. There's one more thing we
 need to do and then your bot is ready to roll:
 
+```python
     # run our bot
     if __name__ == '__main__':
         bot.run()
+```
 
 That's how simple and easy it is to write IRC applications with IrcTK. The
 [complete example](https://github.com/maxcountryman/irctk/tree/master/examples/google.py)
