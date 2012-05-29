@@ -31,7 +31,7 @@ def get_video_description(vid_id):
 
     data = data['data']
 
-    out = '\x02{title}\x02'.format(**data)
+    out = u'\x02{0}\x02'.format(data['title'].decode('utf-8'))
 
     if not data.get('duration'):
         return out

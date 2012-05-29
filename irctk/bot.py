@@ -64,6 +64,7 @@ class Bot(object):
         if self.config is None:
             self.config = Config(self, self.root_path, self.default_config)
         else:
+            # make sure we clear these upon reloads
             self.config['PLUGINS'] = []
             self.config['EVENTS'] = []
             self.config['REGEX'] = []

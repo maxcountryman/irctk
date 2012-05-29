@@ -11,6 +11,7 @@ import sys
 import time
 import threading
 import imp
+import inspect
 
 
 class ReloadHandler(threading.Thread):
@@ -69,6 +70,23 @@ class ReloadHandler(threading.Thread):
 
                     local_fnames = \
                         set([fname for fname in fnames if root_path in fname])
+
+                    # WARNING: here be dragons
+
+                    # get the ID of the main thread
+                    all_threads = dict([(th.name, th.ident)
+                                        for th in threading.enumerate()])
+
+                    main_thread_frame = \
+                            sys._current_frames()[all_threads['MainThread']]
+
+                    # the main thread stack should contain the frame containing
+                    # the filename of the module the bot instance was
+                    # instantiated in
+                    bot_fname = \
+                            inspect.getouterframes(main_thread_frame)[-1][1]
+
+                    local_fnames.add(bot_fname)
 
                     # make sure we load __init__ first
                     local_fnames = sorted(list(local_fnames))

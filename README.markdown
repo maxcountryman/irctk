@@ -2,136 +2,103 @@
 
 IrcTK is a little IRC framework for developing IRC-based applications.
 
-The framework is designed to be simple and easy to use. In an effort to ease
-the flow of development, changes you make to your application source are
-automatically reloaded by the framework so during the course of development you
-don't have to disconnect and reconnect as changes are made.
+##Features
 
-Plugins are a breeze to write. Simply decorate functions with the provided
-methods. Plugins may be tied to a hook or an event, such as 'PRIVMSG'.
-A configurable thread pool manages dispatching of plugins to ensure the
-applications are fast and responsive.
+    * Simple, intuitive API
+    * Automatic reloading
+    * Multithreaded
+
 
 ##Installation
 
-Simply download and install via pip: `pip install irctk`
+Install the package with one of the following commands:
 
-Alternatively easy_install may be used: `easy_install irctk`
+    $ easy_install irctk
 
-##Writing Your First App
+or
 
-First you'll want to make a configuration file for you application. You can
-save this as whatever you'd like, for this example we'll save ours as
-`settings.cfg`. Several parameters are expected in order to set up the
-connection. For instance your `settings.cfg` might look something like this:
+    $ pip install irctk
 
-    SERVER = 'irc.voxinfinitus.net'
-    PORT = 6667
-    SSL = False
-    TIMEOUT = 300
-    NICK = 'hax0r'
-    REALNAME = 'A Python Bot'
-    CHANNELS = ['#voxinfinitus']
+##Example Usage
 
-Next you'll want to create a new file and call it `bot.py` or some other cool
-name. He you'll import the framework bot object, called Bot(). Assign this
-object to a local variable, e.g. `bot`.
+Using IrcTK is easy and fun. If you've ever used a framework like Flask you
+probably already know what to do.
 
+Let's write a simple bot that queries Google when it sees the command
+'.google'. We'll start by configuring our application:
+
+    # import the Bot object from IrcTK
     from irctk import Bot
+
+    # we'll use these later, install Requests if you don't have it already
+    import requests
+    import json
+
+    # initlize the bot object
     bot = Bot()
 
-Remember the configuration file you just wrote? Using our instance of the bot
-class you'll load it up with the following line:
+    # an object container for our configuration values
+    class Config:
+        SERVER = 'irc.voxinfinitus.net'
+        PORT = 6697
+        SSL = True
+        TIMEOUT = 300
+        NICK = 'kaa'
+        REALNAME = 'kaa the python'
+        CHANNELS = ['#voxinfinitus']
 
-    bot.config.from_pyfile('settings.cfg')
+    # populate the configuration with our Config object
+    bot.config.from_object(Config)
 
-Plugins are realized in a slightly different way than some other IRC bots.
-Although they are still loaded into the execution loop, there is no respository
-of plugins. Instead you can hook in any function you like to the execution loop
-by using a decorator:
+Now that our bot is setup and configured we can get to the fun part: writing
+plugins for it!
 
-    @bot.command('test')
-    def test_plugin():
-        return 'Testing... 1, 2, 3!'
+Plugins in IrcTK are functions that are registered via a decorator. For our bot
+we want to write a function that queries Google and gives us the first result.
 
-These commands may live anywhere you like. So if you prefer to split them out
-into a separate file, that's no problem.
+    # the Google search API URL
+    search_url = 'http://ajax.googleapis.com/ajax/services/search/web'
 
-Finally you will want to run your app. To do so simply add the below code to
-the bottom of your module:
 
+    @bot.command('g')  # also bind this function to '.g'
+    @bot.command  # register the wrapped function as a plugin
+    def google(context):
+        # notice that we provide one arg, context: this is optional but if you
+        # want access to the IRC line that triggered the plugin you need to
+        # pass in some variable; we'll use context for this
+
+        query = context.args  # args are parsed automatically by IrcTK
+
+        # make the request, should give us back some JSON
+        r = requests.get(search_url, params=dict(v='1.0', safe='off', q=query))
+
+        # load the JSON
+        data = json.loads(r.content)
+
+        # if we don't have results, bail out of the plugin
+        if not data['responseData']['results']:
+            return 'no results found'
+
+        # otherwise grab the first result
+        first_result = data['responseData']['results'][0]
+
+        # build our return string
+        ret = first_result['titleNoFormatting'] + ' - ' \
+                + first_result['unescapedUrl']
+
+        # finally return the result to the channel or user the plugin was called
+        # from
+        return ret
+
+
+And that's it! You've just written your first plugin. There's one more thing we
+need to do and then your bot is ready to roll:
+
+    # run our bot
     if __name__ == '__main__':
         bot.run()
 
-## What To Do Next?
-
-State is exposed by recieving an argument in the definition of the plugin
-function. Internally the framework will examine the plugin's function, as it's
-recieved, to determine if it takes arguments. In such a case a special
-dictionary of the plugin's state as found when called, is sent to the call of
-the plugin's function.
-
-This state object provides a convenient interface for handling how the plugin
-behaves. For instance, we might define a plugin function that shows us this
-state:
-
-    @bot.command('debug')
-    def show_state(context):
-        '''This plugin function receives the state from the framework as
-        `context` this allows us to do a lot of cool things!
-
-        `context.args` is always any arguments passed to the plugin when called
-        from IRC. For instance in the case of, `.foo bar`, context.args will be
-        `bar`.
-
-        `context.line` is a dictionary containing the parsed IRC line as found
-        when the plugin was called.
-        '''
-
-        if context.args: # if the plugin was called with argument variables
-            bot.reply(context.args, context.line) # show those arguments
-            return str(context.line)              # show us the parsed line
-        else:
-            return str(context.line)
-
-In the above example, `bot.reply` is a special method of the bot instance which
-will automatically format a reply to the correct recipient, i.e. either a user
-who has sent the bot a private message or the channel the plugin was called
-from.
-
-
-## Server Commands (Events to bind to)
-
-Here's a quick list of various IRC server commands you can bind bot.event() to.
-Bear in mind that this list may be missing some commands but that doesn't
-prevent the program from being bound to such commands.
-
-    PRIVMSG
-    NOTICE
-    WHO
-    WHOIS
-    WHOWAS
-    NICK
-    USER
-    PART
-    QUIT
-    JOIN
-    MODE
-    TOPIC
-    NAMES
-    LIST
-    INVITE
-    KICK
-    KILL
-    PING
-    PONG
-
-There are others, feel free to add to this list! :) This may also be useful:
-http://www.irchelp.org/irchelp/rfc/rfc.html
-
-Here's a brief example of binding a function to a JOIN event:
-
-    @bot.event('JOIN')
-    def spammy_greeter(context):
-        user = context.line['user']
-        return 'Hi there, ' + user
+That's how simple and easy it is to write IRC applications with IrcTK. The
+[complete example](https://github.com/maxcountryman/irctk/tree/master/examples/google.py)
+is available in the examples directory. Also a [more complete example bot](https://github.com/maxcountryman/irctk/tree/master/examples/kaa)
+is available there as well.
