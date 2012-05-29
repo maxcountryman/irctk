@@ -4,9 +4,9 @@ IrcTK is a little IRC framework for developing IRC-based applications.
 
 ##Features
 
-    * Simple, intuitive API
-    * Automatic reloading
-    * Multithreaded
+* Simple, intuitive API
+* Automatic reloading
+* Multithreaded
 
 
 ##Installation
