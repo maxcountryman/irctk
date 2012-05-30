@@ -85,6 +85,7 @@ def tell(context):
     '.tell <nick> <message>'
 
     db = get_db_connection()
+    db_init(db)
 
     query = context.args.split(' ', 1)
     nick = context.line['user']
@@ -103,10 +104,8 @@ def tell(context):
     if user_to == user_from.lower():
         return 'No.'
 
-    db_init(db)
-
-    if db.cursor().execute('select count() from tell where user_to=?',
-                           (user_to,)).fetchone()[0] >= 5:
+    if db.execute('select count() from tell where user_to=?',
+                  (user_to,)).fetchone()[0] >= 5:
         return 'That person has too many things queued.'
 
     try:

@@ -4,6 +4,7 @@ from kaa.wikipedia import wiki_re, wiki_search
 from kaa.youtube import youtube_re, get_video_description
 
 from urllib import quote
+from HTMLParser import HTMLParser
 
 import re
 import json
@@ -43,8 +44,11 @@ def google(context):
         desc = get_video_description(vid_id)
         return '{0} -- {1}'.format(desc, url)
 
-    ret = first_result['titleNoFormatting'] + \
-          ' - ' + shortener(url)
+    title = HTMLParser.unescape.__func__(HTMLParser,
+                                         first_result['titleNoFormatting'])
+
+    ret = title + ' - ' + shortener(url)
+
     return ret
 
 

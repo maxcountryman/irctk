@@ -66,14 +66,16 @@ def usage(context):
                 return p['funcs'][0].__doc__
     else:
         p = [(p['hook'], p['funcs']) for p in bot.config['PLUGINS']]
-        p.sort(key=lambda s: s[1])
+        p.sort(key=lambda t: t[1])
         result = []
-        for k, v in groupby(p, key=lambda s: s[1]):
+        # group by function
+        for k, v in groupby(p, key=lambda t: t[1]):
             grouped = [v[0] for v in v]
-            grouped[0] = '\x038' + grouped[0] + '\x03'
+            grouped[0] = '\x02' + grouped[0] + '\x02'
             if len(grouped) > 1:
+                # shortcuts/secondary
                 for i, hook in enumerate(grouped[1:]):
-                    grouped[i+1] = '[\x032' + grouped[i+1] + '\x03]'
+                    grouped[i+1] = '[' + grouped[i+1] + ']'
             result.append(' '.join(grouped))
         result.sort()
         p = ', '.join(result)
@@ -91,17 +93,6 @@ def raw(context):
         bot.irc.send_command(command, args)
     else:
         return raw.__doc__
-
-
-@bot.regex('[\?]')
-def regex_test(context):
-    if context.args == '?foo':
-        return 'bar'
-    if 'ass state' in context.args:
-        return 'http://youtube.com/watch?v=dTI0KDuQl_4'
-    if 'http' in context.args:
-        url = context.args.split('?')[1]
-        return shortener(url)
 
 
 @bot.event('PRIVMSG')
