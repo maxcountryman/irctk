@@ -61,7 +61,7 @@ def remember(context):
     return add_remember_token(db, chan, token, text)
 
 
-@bot.regex('([\?])([a-zA-Z0-9]+)')
+@bot.regex('([\?])([^\s]+)')
 def recall(context):
     db = get_db_connection()
     db_init(db)
