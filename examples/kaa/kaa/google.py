@@ -35,14 +35,14 @@ def google(context):
     wiki = re.search(wiki_re, url)
     if wiki:
         desc, url = wiki_search(wiki.groups()[-1])
-        return u'{0} -- {1}'.format(desc, url)
+        return '{0} -- {1}'.format(desc, url)
 
     # special handling for YouTube
     youtube = re.search(youtube_re, url)
     if youtube:
         vid_id = youtube.groups()[-1]
         desc = get_video_description(vid_id)
-        return u'{0} -- {1}'.format(desc, url)
+        return '{0} -- {1}'.format(desc, url)
 
     title = first_result['titleNoFormatting'].encode('utf-8', 'replace')
     title = HTMLParser.unescape.__func__(HTMLParser, title)
