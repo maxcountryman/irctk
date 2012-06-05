@@ -49,8 +49,9 @@ def wiki_search(query):
     desc = re.sub('\s+', ' ', desc).strip()  # remove excess spaces
 
     if len(desc) > 300:
-        desc = desc[:300] + '...'
+        desc = desc[:300].rsplit(' ', 1)[0] + '...'
 
+    desc = desc.encode('utf-8', 'replace')
     return desc, url
 
 

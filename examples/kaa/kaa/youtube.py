@@ -28,6 +28,7 @@ def get_video_description(vid_id):
         return
 
     data = data['data']
+    data['title'] = data['title'].encode('utf-8', 'replace')
 
     out = '\x02{title}\x02'.format(**data)
 
