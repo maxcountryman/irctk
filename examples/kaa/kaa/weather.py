@@ -17,7 +17,7 @@ def weather(context):
     db = get_db_connection()
 
     location = context.args
-    hostmask = context.line['prefix']
+    hostmask = context.line['prefix'].split('!', 1)[-1]
 
     db.cursor().execute('create table if not exists ' \
                         'weather(host primary key, loc)')
