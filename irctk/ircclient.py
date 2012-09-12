@@ -198,7 +198,7 @@ class IrcWrapper(object):
         self.nick = nick
         self.realname = realname
         self.password = password
-        self.user = 'USER ' + nick + ' 3 * ' + realname
+        self.user = 'USER ' + nick + ' 3 * :' + realname
         self.channels = channels
         self.inp_buffer = ''
         self.out_buffer = ''
