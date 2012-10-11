@@ -45,6 +45,7 @@ class Bot(object):
                       'SSL': False,
                       'TIMEOUT': 300,
                       'NICK': '',
+                      'USER': None,
                       'REALNAME': '',
                       'CHANNELS': [],
                       'PLUGINS': [],
@@ -89,7 +90,8 @@ class Bot(object):
                               self.config['REALNAME'],
                               self.config['PASSWORD'],
                               self.config['CHANNELS'],
-                              logger=self.logger)
+                              logger=self.logger,
+                              user=self.config['USER'])
 
     def _parse_input(self, wait=0.01):
         '''This internal method handles the parsing of commands and events.
