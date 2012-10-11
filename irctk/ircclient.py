@@ -193,12 +193,15 @@ class IrcWrapper(object):
         irc = IrcWrapper(client, 'Kaa', 'Kaa the Python', None, channels)
     '''
 
-    def __init__(self, connection, nick, realname, password, channels, logger):
+    def __init__(self, connection, nick, realname, password, channels, logger, user=None):
+        if user is None:
+            user = nick
+
         self.connection = connection
         self.nick = nick
         self.realname = realname
         self.password = password
-        self.user = 'USER ' + nick + ' 3 * :' + realname
+        self.user = 'USER ' + user + ' 3 * :' + realname
         self.channels = channels
         self.inp_buffer = ''
         self.out_buffer = ''
