@@ -9,5 +9,6 @@ bot = Bot()
 bot.config.from_object(Config)
 
 # load our plugins
-from kaa import (google, imdb, python, remember, repost, tell, urbandict,
-        utils, weather, wikipedia, youtube)
+#from kaa import repost
+from kaa import (google, python, remember, repost, tell, trolldb,
+                 urbandict, utils, weather, wikipedia, youtube)

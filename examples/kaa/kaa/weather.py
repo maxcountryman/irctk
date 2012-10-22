@@ -4,9 +4,16 @@ from kaa import bot
 from kaa.utils import get_db_connection
 
 from urllib import quote
-from lxml import etree
 
 import requests
+import json
+
+WUNDERGROUND_API_URL = 'http://api.wunderground.com/api/'
+WUNDERGROUND_API_KEY = '7b1620be0fa1b756'
+WUNDERGROUND_CONDITIONS = (WUNDERGROUND_API_URL + WUNDERGROUND_API_KEY
+        + '/conditions/q/')
+WUNDERGROUND_FORECAST = (WUNDERGROUND_API_URL + WUNDERGROUND_API_KEY
+        + '/forecast/q/')
 
 
 @bot.command('w')
@@ -25,26 +32,29 @@ def weather(context):
     if not location:
         location = \
             db.cursor().execute('select loc from weather where host=lower(?)',
-                                (hostmask,)).fetchone()[0]
+                                (hostmask,)).fetchone()
         if not location:
             return weather.__doc__
+        location = location[0]
 
-    url = 'http://www.google.com/ig/api?weather=' + quote(location)
-    r = etree.fromstring(requests.get(url).content)
-    r = r.find('weather')
+    r = requests.get(WUNDERGROUND_CONDITIONS + quote(location) + '.json')
+    info = json.loads(r.content).get('current_observation', None)
 
-    if r.find('problem_cause') is not None:
-        return ('Couldn\'t retrieve weather for {0}.'.format(location))
+    if info is None:
+        return 'Location not found or multiple cities match'
 
-    info = dict((e.tag, e.get('data')) for e in r.find('current_conditions'))
-    info['city'] = r.find('forecast_information/city').get('data')
-    info['high'] = r.find('forecast_conditions/high').get('data')
-    info['low'] = r.find('forecast_conditions/low').get('data')
+    r = requests.get(WUNDERGROUND_FORECAST + quote(location) + '.json')
+    forecast = json.loads(r.content)
+    high = forecast[u'forecast']['simpleforecast']['forecastday'][0]['high']
+    temperature_high = high['fahrenheit'] + ' F (' + high['celsius'] + ' C)'
+    temperature_high = 'High: ' + temperature_high
+    info['temperature_high'] = temperature_high
 
     if location:
         db.execute('insert or replace into weather(host, loc) values (?,?)',
                    (hostmask, location))
         db.commit()
 
-    return ('{city}: {condition}, {temp_f}F/{temp_c}C (H:{high}F, L:{low}), '
-            '{humidity}, {wind_condition}.'.format(**info))
+    return ('{display_location[city]}: {weather}, {temperature_string}, '
+            '{temperature_high} Humidity: {relative_humidity}, '
+            'Wind: {wind_string}.'.format(**info))

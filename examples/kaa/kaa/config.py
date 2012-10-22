@@ -3,12 +3,12 @@ class Config(object):
     PORT = 6697
     SSL = True
     TIMEOUT = 300
-    NICK = 'kaa'
+    NICK = 'aak'
     REALNAME = 'kaa the python'
-    CHANNELS = ['#voxinfinitus', '#testing']
+    CHANNELS = ['#testing']
 
     # admin list
-    ADMINS = ['doraemon!~max@staff.voxinfinitus']
+    ADMINS = ['~max@staff.voxinfinitus']
 
     # bitly credentials
     BITLY_LOGIN = 'voxinfinitus'

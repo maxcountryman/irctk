@@ -24,7 +24,6 @@ class PluginHandler(object):
         self.bot = bot
         self.config = self.bot.config
         self.logger = self.bot.logger
-        self._reply = self.bot.reply
 
     @cached_property
     def thread_pool(self):
@@ -123,32 +122,24 @@ class PluginHandler(object):
         self.thread_pool.enqueue_task(*task)
 
     def dequeue_plugin(self, plugin, plugin_context):
-        '''This method assumes that a plugin and plugin context are
-        passed to it as `plugin` and `plugin_context`. It is intended to be
-        called as a plugin is being dequeued, i.e. from a thread pool as
-        called by a worker thread thereof.
-
-        The plugin and plugin context are checked against several conditions
-        that will ultimately affect the formatting of the final message.
-
-        if the plugin function does return a message, that message is
-        formatted and sent back to the server via `cls.reply`.
-        '''
         for func in plugin['funcs']:
             takes_args = inspect.getargspec(func).args
 
-            action = False
-            if plugin.get('action') == True:
-                action = True
+            action = plugin.get('action', False)
+            notice = plugin.get('notice', False)
 
-            notice = False
-            if plugin.get('notice') == True:
-                notice = True
+            try:
+                if takes_args:
+                    message = func(plugin_context)
+                else:
+                    message = func()
 
-            if takes_args:
-                message = func(plugin_context)
-            else:
-                message = func()
+                if message is None:
+                    continue
+
+            except Exception, e:
+                self.logger.warning(e, exc_info=True)
+                continue
 
             if message:
-                self._reply(message, plugin_context.line, action, notice)
+                self.bot.reply(message, plugin_context.line, action, notice)

@@ -75,6 +75,9 @@ def youtube_url(context):
 def youtube(context):
     '.youtube <query>'
 
+    if not context.args:
+        return 'no results found'
+
     r = requests.get(search_api_url, params=dict(q=context.args))
 
     data = json.loads(r.content)
@@ -86,5 +89,7 @@ def youtube(context):
         return 'no results found'
 
     vid_id = data['data']['items'][0]['id']
+    desc = get_video_description(vid_id).decode('utf-8')
+    url = video_url.format(vid_id)
 
-    return get_video_description(vid_id) + ' - ' + video_url.format(vid_id)
+    return u'{0} -- {1}'.format(desc, url)

@@ -24,10 +24,11 @@ def get_db_connection(name=None):
 
 def shortener(url):
     api_url = 'https://api-ssl.bitly.com/v3/shorten'
-    r = requests.get(api_url, params=dict(longUrl=url,
-                                      format='json',
-                                      login=BITLY_LOGIN,
-                                      apiKey=BITLY_KEY))
+    r = requests.get(api_url,
+                     params=dict(longUrl=url,
+                     format='json',
+                     login=BITLY_LOGIN,
+                     apiKey=BITLY_KEY))
     data = json.loads(r.content)['data']
     if data:
         return data['url']
@@ -85,7 +86,7 @@ def usage(context):
 @bot.command
 def raw(context):
     '''.raw <command>'''
-    if not context.line['prefix'] in bot.config.get('ADMINS', []):
+    if not context.line['hostmask'] in bot.config.get('ADMINS', []):
         return
     if context.args:
         command = context.args.split(' ', 1)[0]
@@ -104,12 +105,15 @@ def shorten(context):
     if not contains_url:
         return
 
-    wiki = re.search(wiki_re, context.line['message'])
-    if wiki:
+    wiki = re.search(wiki_re, message)
+    if wiki is not None:
         return
 
-    youtube = re.search(youtube_re, context.line['message'])
-    if youtube:
+    youtube = re.search(youtube_re, message)
+    if youtube is not None:
+        return
+
+    if 'bit.ly' in message or 'i.imgur.com' in message:
         return
 
     urls = find_urls(message)
@@ -118,15 +122,19 @@ def shorten(context):
     for url in urls:
         try:
             r = requests.get(url)
-        except Exception:
-            return 'unable to open url: ' + url
+        except Exception, e:
+            bot.logger.warning('Opening {url} raised {error}'.format(url=url,
+                                                                     error=e))
+            continue
 
         parsed_page = html.parse(StringIO(r.content))
         title = parsed_page.find('.//title')
         url = shortener(url)
 
-        if title is not None:
-            title = title.text
+        if url is None:
+            continue
+        elif title is not None:
+            title = title.text.strip()
             titles_and_urls.append(title + ' - ' + url)
         else:
             titles_and_urls.append(url)

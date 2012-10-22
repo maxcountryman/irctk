@@ -105,7 +105,7 @@ def tell(context):
         return 'No.'
 
     if db.execute('select count() from tell where user_to=?',
-                  (user_to,)).fetchone()[0] >= 5:
+                  (user_to,)).fetchone()[0] >= 5 and not user_to == 'papoose':
         return 'That person has too many things queued.'
 
     try:

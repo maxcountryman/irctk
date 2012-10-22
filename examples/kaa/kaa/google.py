@@ -34,8 +34,11 @@ def google(context):
     # special handling for Wikipedia
     wiki = re.search(wiki_re, url)
     if wiki:
-        desc, url = wiki_search(wiki.groups()[-1])
-        return '{0} -- {1}'.format(desc, url)
+        ret = wiki_search(context.args)
+        bot.logger.info(context.args)
+        bot.logger.info(ret)
+        if ret != 'no results found':
+            return ret
 
     # special handling for YouTube
     youtube = re.search(youtube_re, url)
@@ -44,10 +47,11 @@ def google(context):
         desc = get_video_description(vid_id)
         return '{0} -- {1}'.format(desc, url)
 
-    title = first_result['titleNoFormatting'].encode('utf-8', 'replace')
+    title = first_result['titleNoFormatting']
     title = HTMLParser.unescape.__func__(HTMLParser, title)
 
     ret = title + ' - ' + shortener(url)
+    ret += ' ({0})'.format(first_result['visibleUrl'])
 
     return ret
 

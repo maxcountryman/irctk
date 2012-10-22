@@ -69,4 +69,8 @@ def recall(context):
     chan = context.line['sender']
     token = context.line['regex_search'].groups()[1]
 
-    return get_remember_token(db, chan, token)
+    try:
+        message = get_remember_token(db, chan, token)
+    except IndexError:
+        return
+    return message

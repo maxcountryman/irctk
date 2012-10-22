@@ -2,8 +2,6 @@
 
 from kaa import bot
 
-from urllib import quote
-
 from lxml import etree
 
 import re
@@ -27,11 +25,10 @@ def wiki_search(query):
     ns = '{http://opensearch.org/searchsuggest2}'
     items = data.findall(ns + 'Section/' + ns + 'Item')
 
-    if items == []:
+    if not items:
         if data.find('error') is not None:
             return 'error: {code}: {info}'.format(data.find('error').attrib)
-        else:
-            return 'no results found'
+        return 'no results found'
 
     def extract(item):
         return [item.find(ns + e).text for e in ('Text', 'Description', 'Url')]
@@ -51,14 +48,14 @@ def wiki_search(query):
     if len(desc) > 300:
         desc = desc[:300].rsplit(' ', 1)[0] + '...'
 
-    desc = desc.encode('utf-8', 'replace')
-    return desc, url
+    desc += ' ' + url
+    return desc
 
 
 @bot.regex(wiki_re)
 def wiki_find(context):
     query = context.line['regex_search'].groups()[-1]
-    desc, _ = wiki_search(query)
+    desc = wiki_search(query)
     return desc
 
 
@@ -67,5 +64,4 @@ def wiki_find(context):
 @bot.command
 def wikipedia(context):
     '''.wikipedia <query>'''
-    desc, url = wiki_search(context.args)
-    return '{0} -- {1}'.format(desc, quote(url, ':/'))
+    return wiki_search(context.args)
