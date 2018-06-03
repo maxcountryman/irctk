@@ -1,15 +1,15 @@
-##IrcTK
+# IrcTK
 
 IrcTK is a little IRC framework for developing IRC-based applications.
 
-##Features
+## Features
 
 * Simple, intuitive API
 * Automatic reloading
 * Multithreaded
 
 
-##Installation
+## Installation
 
 Install the package with one of the following commands:
 
@@ -19,7 +19,7 @@ or
 
     $ pip install irctk
 
-##Example Usage
+## Example Usage
 
 Using IrcTK is easy and fun. If you've ever used a framework like Flask you
 probably already know what to do.
